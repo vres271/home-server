@@ -1,0 +1,33 @@
+<div class="layout-wrapper">
+  <aside class="layout-sidebar">
+    <div class="logo">
+      <i class="pi pi-server" style="font-size: 1.5rem; margin-right: 0.5rem;"></i>
+      <span>OrangePi Hub</span>
+    </div>
+    
+    <ul class="layout-menu">
+      <li *ngFor="let item of menuItems">
+        <a [routerLink]="item.routerLink" 
+           routerLinkActive="active-menu-item">
+          <i [class]="item.icon"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      </li>
+    </ul>
+  </aside>
+
+  <main class="layout-main">
+    <p-toolbar styleClass="mb-3">
+      <div class="p-toolbar-group-start font-bold text-xl">
+        OrangePi Home Server
+      </div>
+      <div class="p-toolbar-group-end">
+        <span class="text-sm text-500">v1.0</span>
+      </div>
+    </p-toolbar>
+
+    <div class="content-container">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+</div>

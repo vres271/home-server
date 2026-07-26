@@ -1,0 +1,165 @@
+<div class="card p-4">
+  <p-toast></p-toast>
+
+  <p-tabView>
+    <!-- Вкладка 1: Поиск -->
+    <p-tabPanel header="🔍 Поиск торрентов">
+      <div class="flex flex-column md:flex-row gap-3 mb-4 mt-3">
+        <input 
+          pInputText 
+          type="text" 
+          [(ngModel)]="searchQuery" 
+          placeholder="Название фильма, сериала или раздачи..." 
+          class="flex-1"
+          (keydown.enter)="search()"
+        />
+        <p-button 
+          label="Поиск" 
+          icon="pi pi-search" 
+          (onClick)="search()" 
+          [loading]="searchLoading">
+        </p-button>
+      </div>
+
+      <p-table 
+        [value]="results" 
+        [loading]="searchLoading" 
+        responsiveLayout="scroll"
+        stripedRows
+        styleClass="p-datatable-sm">
+        
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Название</th>
+            <th class="hidden md:table-cell">Трекер</th>
+            <th>Размер</th>
+            <th>Сиды / Пиры</th>
+            <th>Действие</th>
+          </tr>
+        </ng-template>
+        
+        <ng-template pTemplate="body" let-result>
+          <tr>
+            <td>
+              <div class="font-bold text-sm md:text-base">{{ result.Title }}</div>
+              <small class="text-500">{{ getCategory(result.Title) === 'series' ? '📺 Сериал' : '🎬 Фильм' }}</small>
+            </td>
+            <td class="hidden md:table-cell">{{ result.Tracker }}</td>
+            <td>{{ formatSize(result.Size) }}</td>
+            <td>
+              <span class="text-green-600 font-bold">{{ result.Seeders }}</span> / 
+              <span class="text-red-500">{{ result.Peers }}</span>
+            </td>
+            <td>
+              <p-button 
+                icon="pi pi-download" 
+                severity="success" 
+                size="small" 
+                (onClick)="addTorrent(result)"
+                pTooltip="Добавить в qBittorrent">
+              </p-button>
+            </td>
+          </tr>
+        </ng-template>
+        
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5" class="text-center p-4 text-500">
+              {{ searchLoading ? 'Выполняется поиск...' : 'Ничего не найдено. Введите запрос.' }}
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-tabPanel>
+
+    <!-- Вкладка 2: Активные загрузки -->
+    <p-tabPanel header="⬇️ Активные загрузки">
+      <div class="flex justify-content-end mb-3 mt-3">
+        <p-button 
+          icon="pi pi-refresh" 
+          label="Обновить" 
+          severity="secondary" 
+          size="small" 
+          (onClick)="loadTorrents()" 
+          [loading]="downloadsLoading">
+        </p-button>
+      </div>
+
+      <p-table 
+        [value]="activeTorrents" 
+        [loading]="downloadsLoading" 
+        responsiveLayout="scroll"
+        stripedRows
+        styleClass="p-datatable-sm">
+        
+        <ng-template pTemplate="header">
+          <tr>
+            <th>Название</th>
+            <th>Прогресс</th>
+            <th class="hidden md:table-cell">Скорость</th>
+            <th>Статус</th>
+            <th>Действия</th>
+          </tr>
+        </ng-template>
+        
+        <ng-template pTemplate="body" let-torrent>
+          <tr>
+            <td>
+              <div class="font-bold text-sm md:text-base">{{ torrent.name }}</div>
+              <small class="text-500">{{ formatSize(torrent.size) }} • {{ torrent.category || 'Без категории' }}</small>
+            </td>
+            <td style="min-width: 150px;">
+              <p-progressBar [value]="torrent.progress * 100" [showValue]="true" styleClass="h-1rem"></p-progressBar>
+            </td>
+            <td class="hidden md:table-cell">
+              {{ torrent.state === 'downloading' ? '⬇️ ' + formatSpeed(torrent.dlspeed) : '-' }}
+            </td>
+            <td>
+              <span class="text-sm">{{ getStateLabel(torrent.state) }}</span>
+            </td>
+            <td>
+                <div class="flex gap-2">
+                    <!-- Пауза: для всех скачивающихся и раздающихся -->
+                    <p-button 
+                        *ngIf="['downloading', 'forcedDL', 'metaDL', 'stalledDL', 'uploading', 'forcedUP', 'stalledUP'].includes(torrent.state)"
+                        icon="pi pi-pause" 
+                        severity="warn" 
+                        [size]="'small'" 
+                        (onClick)="pauseTorrent(torrent.hash)"
+                        pTooltip="Пауза">
+                    </p-button>
+                    
+                    <!-- Возобновить: для всех на паузе -->
+                    <p-button 
+                        *ngIf="['pausedDL', 'pausedUP'].includes(torrent.state)"
+                        icon="pi pi-play" 
+                        [severity]="'success'" 
+                        [size]="'small'" 
+                        (onClick)="resumeTorrent(torrent.hash)"
+                        pTooltip="Возобновить">
+                    </p-button>
+                    
+                    <!-- Удалить: всегда доступна -->
+                    <p-button 
+                        icon="pi pi-trash" 
+                        [severity]="'danger'" 
+                        [size]="'small'" 
+                        (onClick)="deleteTorrent(torrent.hash, torrent.name)"
+                        pTooltip="Удалить из списка">
+                    </p-button>
+                </div>
+            </td>
+          </tr>
+        </ng-template>
+        
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="5" class="text-center p-4 text-500">
+              {{ downloadsLoading ? 'Загрузка списка...' : 'Нет активных загрузок.' }}
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    </p-tabPanel>
+  </p-tabView>
+</div>

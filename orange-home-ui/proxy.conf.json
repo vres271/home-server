@@ -1,0 +1,24 @@
+{
+  "/api/jackett": {
+    "target": "http://109.248.162.130:9117",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api/jackett": ""
+    },
+    "logLevel": "debug"
+  },
+  "/api/qbittorrent": {
+    "target": "http://192.168.0.150:8080",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api/qbittorrent": ""
+    },
+    "headers": {
+      "Origin": "http://192.168.0.150:8080",
+      "Host": "192.168.0.150:8080"
+    },
+    "logLevel": "debug"
+  }
+}
