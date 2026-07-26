@@ -1,12 +1,11 @@
-<div class="card p-2 md:p-4">
+<div class="card">
   <p-tabView>
-    <p-tabPanel header="Поиск">
-      <app-torrent-search></app-torrent-search>
-    </p-tabPanel>
-
     <!-- (onChange) автоматически обновит список при переключении на эту вкладку! -->
     <p-tabPanel header="Загрузки">
       <app-torrent-downloads></app-torrent-downloads>
+    </p-tabPanel>
+    <p-tabPanel header="Поиск">
+      <app-torrent-search></app-torrent-search>
     </p-tabPanel>
   </p-tabView>
 </div>

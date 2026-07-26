@@ -48,6 +48,10 @@ export class DownloadsComponent implements OnInit {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
+  formatSpeedProgress(complete: number) {
+    return Math.round(complete * 100);
+  }
+
   formatSpeed(bytesPerSec: number): string {
     return this.formatSize(bytesPerSec) + '/s';
   }

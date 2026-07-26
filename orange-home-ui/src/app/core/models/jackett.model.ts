@@ -4,14 +4,15 @@ export interface JackettResult {
   CategoryDesc: string;
   Title: string;
   Guid: string;
-  Link: string; // Ссылка на скачивание через Jackett (с apiKey)
+  Link: string;
   Details: string;
   PublishDate: string;
-  Size: number; // в байтах
+  Size: number;
   Seeders: number;
   Peers: number;
   InfoHash: string;
   MagnetUri: string;
+  Poster?: string;
 }
 
 export interface JackettSearchResponse {

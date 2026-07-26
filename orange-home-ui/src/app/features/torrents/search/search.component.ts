@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -14,7 +14,7 @@ import { JackettResult } from '../../../core/models/jackett.model';
 @Component({
   selector: 'app-torrent-search',
   standalone: true,
-  imports: [CommonModule, FormsModule, InputTextModule, ButtonModule, ToastModule],
+  imports: [CommonModule, FormsModule, InputTextModule, ButtonModule, ToastModule, DatePipe],
   providers: [MessageService],
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.css']
@@ -77,4 +77,12 @@ export class SearchComponent {
       error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось добавить торрент' })
     });
   }
+
+  onImageError(event: any) {
+    // Скрываем изображение, если оно не загрузилось (битая ссылка или CORS)
+    event.target.style.display = 'none';
+    // Опционально: можно скрыть весь контейнер, если нужно
+    // event.target.parentElement.style.display = 'none';
+  }
+
 }

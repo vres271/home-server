@@ -2,6 +2,36 @@
   background-color: var(--surface-card);
   transition: box-shadow 0.2s;
 }
+
 .torrent-card:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Контейнер для постера */
+.poster-container {
+  width: 80px;
+  height: 120px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: var(--surface-200); /* Серый фон, если картинка прозрачная или грузится */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Само изображение */
+.poster-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* Картинка заполнит блок, обрезаясь по краям, но не искажаясь */
+  display: block;
+}
+
+/* Адаптация для мобильных */
+@media (max-width: 768px) {
+  .poster-container {
+    width: 60px;
+    height: 90px;
+    align-self: flex-start; /* Чтобы картинка не растягивалась по центру на узком экране */
+  }
 }
