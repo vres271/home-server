@@ -1,5 +1,6 @@
 <div class="layout-wrapper">
-  <aside class="layout-sidebar">
+  <!-- Боковое меню (десктоп) -->
+  <aside class="layout-sidebar desktop-only">
     <div class="logo">
       <i class="pi pi-server" style="font-size: 1.5rem; margin-right: 0.5rem;"></i>
       <span>OrangePi Hub</span>
@@ -16,16 +17,42 @@
     </ul>
   </aside>
 
+  <!-- Боковое меню (мобильное) - используем p-sidebar -->
+  <p-sidebar [(visible)]="isMobileMenuOpen" position="left" styleClass="mobile-sidebar">
+    <ng-template pTemplate="header">
+      <div class="logo">
+        <i class="pi pi-server" style="font-size: 1.5rem; margin-right: 0.5rem;"></i>
+        <span>OrangePi Hub</span>
+      </div>
+    </ng-template>
+    
+    <ul class="layout-menu">
+      <li *ngFor="let item of menuItems">
+        <a [routerLink]="item.routerLink" 
+           routerLinkActive="active-menu-item"
+           (click)="closeMobileMenu()">
+          <i [class]="item.icon"></i>
+          <span>{{ item.label }}</span>
+        </a>
+      </li>
+    </ul>
+  </p-sidebar>
+
+  <!-- Основной контент -->
   <main class="layout-main">
-    <p-toolbar styleClass="mb-3">
-      <div class="p-toolbar-group-start font-bold text-xl">
-        OrangePi Home Server
+    <!-- Верхняя панель -->
+    <p-toolbar styleClass="mb-2 md:mb-3">
+      <div class="p-toolbar-group-start">
+        <!-- Кнопка гамбургер (видна только на мобильных) -->
+        <button pButton icon="pi pi-bars" class="p-button-text p-button-rounded mobile-menu-btn" (click)="toggleMobileMenu()"></button>
+        <span class="font-bold text-xl ml-2">OrangePi Home Server</span>
       </div>
       <div class="p-toolbar-group-end">
-        <span class="text-sm text-500">v1.0</span>
+        <span class="text-sm text-500 hidden md:inline">v1.0</span>
       </div>
     </p-toolbar>
 
+    <!-- Контент разделов -->
     <div class="content-container">
       <router-outlet></router-outlet>
     </div>

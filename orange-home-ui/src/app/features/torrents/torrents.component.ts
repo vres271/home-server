@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
-import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { TabViewModule } from 'primeng/tabview';
 import { ProgressBarModule } from 'primeng/progressbar';
@@ -20,7 +19,7 @@ import { TorrentInfo } from '../../core/models/qbittorrent.model';
   standalone: true,
   imports: [
     CommonModule, FormsModule, InputTextModule, ButtonModule, 
-    TableModule, ToastModule, TabViewModule, ProgressBarModule
+    ToastModule, TabViewModule, ProgressBarModule
   ],
   providers: [MessageService],
   templateUrl: './torrents.component.html',
