@@ -128,36 +128,40 @@ export class TorrentsComponent implements OnInit {
   }
 
   deleteTorrent(hash: string, name: string) {
-    if (confirm(`Удалить "${name}" из списка? Файлы на диске останутся.`)) {
-      this.qbService.deleteTorrent(hash, false).subscribe(() => {
-        this.messageService.add({ severity: 'info', summary: 'Удалено', detail: 'Торрент удален из списка' });
+    if (confirm(`Удалить "${name}"?\n\nФайлы на диске также будут удалены.`)) {
+      this.qbService.deleteTorrent(hash, true).subscribe(() => {
+        this.messageService.add({ 
+          severity: 'info', 
+          summary: 'Удалено', 
+          detail: 'Торрент и файлы удалены' 
+        });
         this.loadTorrents();
       });
     }
   }
 
-    getStateLabel(state: string): string {
-        const labels: Record<string, string> = {
-            'error': '❌ Ошибка',
-            'missingFiles': '❗ Файлы отсутствуют',
-            'uploading': '⬆️ Раздаётся',
-            'stalledUP': '⬆️ Раздача (нет пиров)',
-            'forcedUP': '⬆️ Раздача (приоритет)',
-            'queuedUP': '⏳ В очереди на раздачу',
-            'checkingUP': '🔍 Проверка (раздача)',
-            'allocating': '💾 Выделение места',
-            'downloading': '⬇️ Скачивается',
-            'metaDL': '🔗 Получение метаданных',
-            'stalledDL': '⏸️ Ожидание (нет сидов)',
-            'forcedDL': '⬇️ Скачивается (приоритет)',
-            'pausedDL': '⏸️ На паузе',
-            'pausedUP': '⏸️ На паузе (раздача)',
-            'queuedDL': '⏳ В очереди',
-            'checkingDL': '🔍 Проверка',
-            'checkingResumeData': '🔍 Проверка данных',
-            'moving': '📁 Перемещение',
-            'unknown': '❓ Неизвестно'
-        };
-        return labels[state] || `❓ ${state}`;
-    }
+  getStateLabel(state: string): string {
+      const labels: Record<string, string> = {
+          'error': '❌ Ошибка',
+          'missingFiles': '❗ Файлы отсутствуют',
+          'uploading': '⬆️ Раздаётся',
+          'stalledUP': '⬆️ Раздача (нет пиров)',
+          'forcedUP': '⬆️ Раздача (приоритет)',
+          'queuedUP': '⏳ В очереди на раздачу',
+          'checkingUP': '🔍 Проверка (раздача)',
+          'allocating': '💾 Выделение места',
+          'downloading': '⬇️ Скачивается',
+          'metaDL': '🔗 Получение метаданных',
+          'stalledDL': '⏸️ Ожидание (нет сидов)',
+          'forcedDL': '⬇️ Скачивается (приоритет)',
+          'pausedDL': '⏸️ На паузе',
+          'pausedUP': '⏸️ На паузе (раздача)',
+          'queuedDL': '⏳ В очереди',
+          'checkingDL': '🔍 Проверка',
+          'checkingResumeData': '🔍 Проверка данных',
+          'moving': '📁 Перемещение',
+          'unknown': '❓ Неизвестно'
+      };
+      return labels[state] || `❓ ${state}`;
+  }
 }
