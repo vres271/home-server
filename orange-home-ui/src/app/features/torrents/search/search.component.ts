@@ -1,0 +1,80 @@
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { InputTextModule } from 'primeng/inputtext';
+import { ButtonModule } from 'primeng/button';
+import { ToastModule } from 'primeng/toast';
+import { MessageService } from 'primeng/api';
+import { finalize } from 'rxjs/operators';
+
+import { JackettService } from '../../../core/services/jackett.service';
+import { QBittorrentService } from '../../../core/services/qbittorrent.service';
+import { JackettResult } from '../../../core/models/jackett.model';
+
+@Component({
+  selector: 'app-torrent-search',
+  standalone: true,
+  imports: [CommonModule, FormsModule, InputTextModule, ButtonModule, ToastModule],
+  providers: [MessageService],
+  templateUrl: './search.component.html',
+  styleUrls: ['./search.component.css']
+})
+export class SearchComponent {
+  private jackettService = inject(JackettService);
+  private qbService = inject(QBittorrentService);
+  private messageService = inject(MessageService);
+
+  searchQuery = '';
+  results: JackettResult[] = [];
+  searchLoading = false;
+
+  search() {
+    if (!this.searchQuery.trim()) return;
+    this.searchLoading = true;
+    
+    this.jackettService.search(this.searchQuery).pipe(
+      finalize(() => this.searchLoading = false)
+    ).subscribe({
+      next: (res) => {
+        this.results = res.Results || [];
+        if (this.results.length === 0) {
+          this.messageService.add({ severity: 'info', summary: 'Информация', detail: 'Ничего не найдено' });
+        }
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось выполнить поиск' })
+    });
+  }
+
+  isSeries(title: string): boolean {
+    return /s\d{2}e\d{2}|сезон|серия|season|episode/i.test(title.toLowerCase());
+  }
+
+  getCategory(title: string): string {
+    return this.isSeries(title) ? 'series' : 'movies';
+  }
+
+  formatSize(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  addTorrent(result: JackettResult) {
+    const isSeries = this.isSeries(result.Title);
+    const category = this.getCategory(result.Title);
+    const torrentUrl = result.MagnetUri || result.Link;
+
+    this.qbService.addTorrent(torrentUrl, isSeries, category).subscribe({
+      next: () => {
+        this.messageService.add({ 
+          severity: 'success', 
+          summary: 'Успех', 
+          detail: `"${result.Title}" добавлен (${isSeries ? 'на паузу' : 'в загрузку'})` 
+        });
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось добавить торрент' })
+    });
+  }
+}

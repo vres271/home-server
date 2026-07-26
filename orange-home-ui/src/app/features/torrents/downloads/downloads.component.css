@@ -2,22 +2,9 @@
   background-color: var(--surface-card);
   transition: box-shadow 0.2s;
 }
-
 .torrent-card:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
-
-/* Тонкий прогрессбар */
 :host ::ng-deep .h-0-5rem {
   height: 0.5rem !important;
-}
-
-.content-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 1rem;
-}
-
-.toolbar {
-    margin-top: -42px;
 }

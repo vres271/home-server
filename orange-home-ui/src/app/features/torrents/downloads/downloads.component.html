@@ -1,0 +1,65 @@
+<p-toast></p-toast>
+
+<div class="flex justify-content-end mb-3 mt-3">
+  <p-button 
+    icon="pi pi-refresh" 
+    label="Обновить" 
+    severity="secondary" 
+    size="small" 
+    (onClick)="loadTorrents()" 
+    [loading]="downloadsLoading">
+  </p-button>
+</div>
+
+<div *ngIf="downloadsLoading" class="text-center p-4">
+  <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
+  <p class="mt-2">Загрузка списка...</p>
+</div>
+
+<div *ngIf="!downloadsLoading && activeTorrents.length === 0" class="text-center p-4 text-500">
+  Нет активных загрузок.
+</div>
+
+<div *ngFor="let torrent of activeTorrents" class="torrent-card mb-2 md:mb-3 p-2 md:p-3 border-1 surface-border border-round">
+  <div class="font-bold mb-1">{{ torrent.name }}</div>
+  <small class="text-500 block mb-2">
+    {{ formatSize(torrent.size) }} • {{ torrent.category || 'Без категории' }}
+  </small>
+  
+  <p-progressBar [value]="torrent.progress * 100" [showValue]="true" styleClass="h-0.5rem mb-2"></p-progressBar>
+  
+  <div class="flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <span class="text-sm">{{ getStateLabel(torrent.state) }}</span>
+    <span *ngIf="torrent.state === 'downloading'" class="text-sm text-green-600">
+      ⬇️ {{ formatSpeed(torrent.dlspeed) }}
+    </span>
+  </div>
+  
+  <div class="flex gap-2 justify-content-end">
+    <p-button 
+      *ngIf="['downloading', 'forcedDL', 'metaDL', 'stalledDL', 'uploading', 'forcedUP', 'stalledUP'].includes(torrent.state)"
+      icon="pi pi-pause" 
+      severity="warn" 
+      [size]="'small'" 
+      (onClick)="pauseTorrent(torrent.hash)"
+      pTooltip="Пауза">
+    </p-button>
+    
+    <p-button 
+      *ngIf="['pausedDL', 'pausedUP'].includes(torrent.state)"
+      icon="pi pi-play" 
+      [severity]="'success'" 
+      [size]="'small'" 
+      (onClick)="resumeTorrent(torrent.hash)"
+      pTooltip="Возобновить">
+    </p-button>
+    
+    <p-button 
+      icon="pi pi-trash" 
+      [severity]="'danger'" 
+      [size]="'small'" 
+      (onClick)="deleteTorrent(torrent.hash, torrent.name)"
+      pTooltip="Удалить торрент и файлы">
+    </p-button>
+  </div>
+</div>
