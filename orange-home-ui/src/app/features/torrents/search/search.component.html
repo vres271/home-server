@@ -44,14 +44,16 @@
   <div class="flex-1 flex flex-column justify-content-between">
     <div>
       <div class="font-bold mb-1 text-base md:text-lg">{{ result.Title }}</div>
-      <div class="flex flex-wrap gap-3 mb-1 text-sm justify-content-between align-items-center">
-        <span>{{ formatSize(result.Size) }}</span>
-        <span>{{ result.PublishDate | date:'dd.MM.yyyy' }}</span>
+      <div class="flex flex-wrap gap-3 mb-2 text-sm justify-content-between align-items-center">
         <span>{{ getCategory(result.Title) === 'series' ? 'Сериал' : 'Фильм' }} • {{ result.Tracker }}</span>
         <span>
           <span class="text-green-600 font-bold">{{ result.Seeders }}</span> / 
           <span class="text-red-500">{{ result.Peers }}</span>
         </span>
+        <span>{{ result.PublishDate | date:'dd.MM.yyyy' }}</span>
+      </div>
+      <div class="flex flex-wrap gap-3 mt-2  text-sm justify-content-between align-items-center">
+        <span class="font-bold text-lg text-500">{{ formatSize(result.Size) }}</span>
         <p-button 
           icon="pi pi-download" 
           severity="success" 
