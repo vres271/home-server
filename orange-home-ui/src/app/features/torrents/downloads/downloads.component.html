@@ -45,7 +45,7 @@
     </p-button>
     
     <p-button 
-      *ngIf="['pausedDL', 'pausedUP'].includes(torrent.state)"
+      *ngIf="['stoppedDL', 'stoppedUP'].includes(torrent.state)"
       icon="pi pi-play" 
       [severity]="'success'" 
       [size]="'small'" 

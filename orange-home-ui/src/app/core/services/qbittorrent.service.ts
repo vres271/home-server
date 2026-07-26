@@ -63,20 +63,20 @@ export class QBittorrentService {
     );
   }
 
-  pauseTorrent(hash: string): Observable<any> {
+  stopTorrent(hash: string): Observable<any> {
     const body = new HttpParams().set('hashes', hash);
     return this.ensureAuth(
-      this.http.post(`${this.apiBase}/torrents/pause`, body.toString(), {
+      this.http.post(`${this.apiBase}/torrents/stop`, body.toString(), {
         responseType: 'text',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       })
     );
   }
 
-  resumeTorrent(hash: string): Observable<any> {
+  startTorrent(hash: string): Observable<any> {
     const body = new HttpParams().set('hashes', hash);
     return this.ensureAuth(
-      this.http.post(`${this.apiBase}/torrents/resume`, body.toString(), {
+      this.http.post(`${this.apiBase}/torrents/start`, body.toString(), {
         responseType: 'text',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
       })

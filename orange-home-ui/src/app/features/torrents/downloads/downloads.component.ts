@@ -57,14 +57,14 @@ export class DownloadsComponent implements OnInit {
   }
 
   pauseTorrent(hash: string) {
-    this.qbService.pauseTorrent(hash).subscribe(() => {
+    this.qbService.stopTorrent(hash).subscribe(() => {
       this.messageService.add({ severity: 'warn', summary: 'Пауза', detail: 'Загрузка приостановлена' });
       this.loadTorrents();
     });
   }
 
   resumeTorrent(hash: string) {
-    this.qbService.resumeTorrent(hash).subscribe(() => {
+    this.qbService.startTorrent(hash).subscribe(() => {
       this.messageService.add({ severity: 'success', summary: 'Возобновлено', detail: 'Загрузка возобновлена' });
       this.loadTorrents();
     });
@@ -85,7 +85,7 @@ export class DownloadsComponent implements OnInit {
       'stalledUP': '⬆️ Раздача (нет пиров)', 'forcedUP': '⬆️ Раздача (приоритет)', 'queuedUP': '⏳ В очереди на раздачу',
       'checkingUP': '🔍 Проверка (раздача)', 'allocating': '💾 Выделение места', 'downloading': '⬇️ Скачивается',
       'metaDL': '🔗 Получение метаданных', 'stalledDL': '⏸️ Ожидание (нет сидов)', 'forcedDL': '⬇️ Скачивается (приоритет)',
-      'pausedDL': '⏸️ На паузе', 'pausedUP': '⏸️ На паузе (раздача)', 'queuedDL': '⏳ В очереди',
+      'stoppedDL': '⏸️ На паузе', 'stoppedUP': '⏸️ На паузе (раздача)', 'queuedDL': '⏳ В очереди',
       'checkingDL': '🔍 Проверка', 'checkingResumeData': '🔍 Проверка данных', 'moving': '📁 Перемещение', 'unknown': '❓ Неизвестно'
     };
     return labels[state] || `❓ ${state}`;
