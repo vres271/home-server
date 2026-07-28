@@ -18,48 +18,63 @@
   </p-button>
 </div>
 
-<div *ngIf="searchLoading" class="text-center p-4">
-  <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
-  <p class="mt-2">Выполняется поиск...</p>
-</div>
-
+<!-- Сообщение "Ничего не найдено" (без изменений) -->
 <div *ngIf="!searchLoading && results.length === 0 && searchQuery" class="text-center p-4 text-500">
   Ничего не найдено.
 </div>
 
-<div *ngFor="let result of results" class="torrent-card mb-2 md:mb-3 p-2 md:p-3 border-1 surface-border border-round flex flex-column md:flex-row gap-3">
+<!-- Контейнер для результатов с условным классом -->
+<div class="results-container" [class.is-searching]="searchLoading && results.length > 0">
   
-  <!-- Блок с постером (показывается только если есть ссылка) -->
-  <div *ngIf="result.Poster" class="poster-container flex-shrink-0 mx-auto md:mx-0">
-    <img 
-      [src]="result.Poster" 
-      [alt]="result.Title" 
-      class="poster-image" 
-      loading="lazy" 
-      (error)="onImageError($event)"
-    />
+  <!-- Оверлей, который появляется только при загрузке, если уже есть старые результаты -->
+  <div *ngIf="searchLoading && results.length > 0" class="loading-overlay">
+    <i class="pi pi-spin pi-spinner text-3xl mb-2"></i>
+    <span class="text-500 font-medium">Обновление результатов...</span>
   </div>
 
-  <!-- Блок с информацией -->
-  <div class="flex-1 flex flex-column justify-content-between">
-    <div>
-      <div class="font-bold mb-1 text-base md:text-lg">{{ result.Title }}</div>
-      <div class="flex flex-wrap gap-3 mb-2 text-sm justify-content-between align-items-center">
-        <span>{{ getCategory(result.Title) === 'series' ? 'Сериал' : 'Фильм' }} • {{ result.Tracker }}</span>
-        <span>
-          <span class="text-green-600 font-bold">{{ result.Seeders }}</span> / 
-          <span class="text-red-500">{{ result.Peers }}</span>
-        </span>
-        <span>{{ result.PublishDate | date:'dd.MM.yyyy' }}</span>
-      </div>
-      <div class="flex flex-wrap gap-3 mt-2  text-sm justify-content-between align-items-center">
-        <span class="font-bold text-lg text-500">{{ formatSize(result.Size) }}</span>
-        <p-button 
-          icon="pi pi-download" 
-          severity="success" 
-          size="small" 
-          (onClick)="addTorrent(result)">
-        </p-button>
+  <!-- Список карточек -->
+  <div *ngFor="let result of results" class="torrent-card mb-2 md:mb-3 p-2 md:p-3 border-1 surface-border border-round flex flex-column md:flex-row gap-3">
+    
+    <!-- Блок с постером -->
+    <div *ngIf="result.Poster" class="poster-container flex-shrink-0 mx-auto md:mx-0">
+      <img 
+        [src]="result.Poster" 
+        [alt]="result.Title" 
+        class="poster-image" 
+        loading="lazy" 
+        (error)="onImageError($event)"
+      />
+    </div>
+
+    <!-- Блок с информацией (твой вариант, без изменений) -->
+    <div class="flex-1 flex flex-column justify-content-between">
+      <div>
+        <div class="font-bold mb-1 text-base md:text-lg">{{ result.Title }}</div>
+        <div class="flex flex-wrap gap-3 mb-2 text-sm justify-content-between align-items-center">
+          <span>{{ getCategory(result.Title) === 'series' ? 'Сериал' : 'Фильм' }} • {{ result.Tracker }}</span>
+          <span>
+            <span class="text-green-600 font-bold">{{ result.Seeders }}</span> / 
+            <span class="text-red-500">{{ result.Peers }}</span>
+          </span>
+          <span>{{ result.PublishDate | date:'dd.MM.yyyy' }}</span>
+        </div>
+        <div class="flex flex-wrap mt-2 text-sm justify-content-between align-items-center gap-2">
+          <span class="font-bold text-lg text-500">{{ formatSize(result.Size) }}</span>
+          <div class="flex align-items-center gap-2">
+            <span *ngIf="hasTorrentFile(result)" title=".torrent файл" class="inline-flex align-items-center justify-content-center text-xs  text-orange-700 border-round py-1" >
+              <i class="pi pi-file"></i>
+            </span>
+            <span *ngIf="hasMagnet(result)" title="Magnet-ссылка" class="inline-flex align-items-center justify-content-center text-xs  text-blue-700 border-round py-1" >
+              <i class="pi pi-link"></i>
+            </span>
+            <p-button 
+              icon="pi pi-download" 
+              severity="success" 
+              size="small" 
+              (onClick)="addTorrent(result)">
+            </p-button>
+          </div>
+        </div>
       </div>
     </div>
   </div>

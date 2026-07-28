@@ -61,10 +61,22 @@ export class SearchComponent {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
+  // --- Новые методы для проверки типов ссылок ---
+  hasMagnet(result: JackettResult): boolean {
+    return !!result.MagnetUri && result.MagnetUri.startsWith('magnet:');
+  }
+
+  hasTorrentFile(result: JackettResult): boolean {
+    // Если есть Link и это не магнет-ссылка (иногда Jackett кладет магнет и туда)
+    return !!result.Link && !result.Link.startsWith('magnet:');
+  }
+
   addTorrent(result: JackettResult) {
     const isSeries = this.isSeries(result.Title);
     const category = this.getCategory(result.Title);
-    const torrentUrl = result.MagnetUri || result.Link;
+    
+    // Приоритет: сначала прямой .torrent файл (избегает зависания на metaDL), потом магнет
+    const torrentUrl = result.Link || result.MagnetUri;
 
     this.qbService.addTorrent(torrentUrl, isSeries, category).subscribe({
       next: () => {
@@ -79,10 +91,6 @@ export class SearchComponent {
   }
 
   onImageError(event: any) {
-    // Скрываем изображение, если оно не загрузилось (битая ссылка или CORS)
     event.target.style.display = 'none';
-    // Опционально: можно скрыть весь контейнер, если нужно
-    // event.target.parentElement.style.display = 'none';
   }
-
 }

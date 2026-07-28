@@ -35,3 +35,32 @@
     align-self: flex-start; /* Чтобы картинка не растягивалась по центру на узком экране */
   }
 }
+
+/* Контейнер должен быть relative, чтобы оверлей позиционировался внутри него */
+.results-container {
+  position: relative;
+  min-height: 50px;
+}
+
+/* Когда идет поиск и есть старые результаты: */
+.results-container.is-searching .torrent-card {
+  opacity: 0.4; /* Делаем карточки полупрозрачными */
+  pointer-events: none; /* Полностью отключаем клики по кнопкам и ссылкам в карточках */
+  transition: opacity 0.2s ease;
+}
+
+/* Стили для оверлея */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  /* Легкое размытие фона под оверлеем (работает в современных браузерах) */
+  backdrop-filter: blur(2px); 
+}
