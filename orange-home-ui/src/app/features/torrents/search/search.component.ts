@@ -81,21 +81,41 @@ export class SearchComponent {
   }
 
   addTorrent(result: JackettResult) {
-    const isSeries = this.isSeries(result.Title);
-    const category = this.getCategory(result.Title);
+    const displayName = this.getDisplayTitle(result);
+    const isSeries = this.isSeries(displayName);
+    const category = this.getCategory(displayName);
     
-    // Приоритет: сначала прямой .torrent файл (избегает зависания на metaDL), потом магнет
-    const torrentUrl = result.Link || result.MagnetUri;
+    let torrentUrl = result.MagnetUri; // Запасной вариант
+
+    if (result.Link && !result.Link.startsWith('magnet:')) {
+      const currentOrigin = 'http://192.168.0.150';
+      torrentUrl = result.Link.replace(/^https?:\/\/[^/]+(\/dl\/.*)$/i, `${currentOrigin}/api/jackett$1`);
+    }
 
     this.qbService.addTorrent(torrentUrl, isSeries, category).subscribe({
       next: () => {
         this.messageService.add({ 
           severity: 'success', 
           summary: 'Успех', 
-          detail: `"${result.Title}" добавлен (${isSeries ? 'на паузу' : 'в загрузку'})` 
+          detail: `"${displayName}" добавлен (${isSeries ? 'на паузу' : 'в загрузку'})` 
         });
       },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось добавить торрент' })
+      error: (err) => {
+        console.error('❌ Ошибка добавления через прямую ссылку:', err);
+        
+        if (result.MagnetUri && torrentUrl !== result.MagnetUri) {
+          this.qbService.addTorrent(result.MagnetUri, isSeries, category).subscribe({
+            next: () => {
+              this.messageService.add({ severity: 'success', summary: 'Успех (Magnet)', detail: `"${displayName}" добавлен через магнет` });
+            },
+            error: () => {
+              this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось добавить торрент' });
+            }
+          });
+        } else {
+          this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось добавить торрент' });
+        }
+      }
     });
   }
 
