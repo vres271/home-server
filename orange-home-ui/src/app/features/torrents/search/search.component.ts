@@ -49,6 +49,15 @@ export class SearchComponent {
     return /s\d{2}e\d{2}|сезон|серия|season|episode/i.test(title.toLowerCase());
   }
 
+  getDisplayTitle(result: JackettResult): string {
+    // Если есть Description и он отличается от Title (часто там полное имя), берем его
+    if (result.Description && result.Description !== result.Title) {
+      return result.Description;
+    }
+    // Иначе берем Title, или заглушку, если и его нет
+    return result.Title || 'Без названия';
+  }
+
   getCategory(title: string): string {
     return this.isSeries(title) ? 'series' : 'movies';
   }

@@ -8,3 +8,11 @@
 :host ::ng-deep .h-0-5rem {
   height: 0.5rem !important;
 }
+
+:host ::ng-deep .torrent-progress-bar .p-progressbar-label {
+  font-size: 0.7rem;
+}
+:host ::ng-deep .torrent-progress-bar {
+  height: 0.83rem;                 
+  margin-bottom: .6rem;            
+}

@@ -3,6 +3,7 @@ export interface JackettResult {
   TrackerType: string;
   CategoryDesc: string;
   Title: string;
+  Description?: string;
   Guid: string;
   Link: string;
   Details: string;

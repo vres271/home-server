@@ -26,4 +26,11 @@ html, body {
   .card {
     padding: 0 !important;
   }
+
+  .p-toast {
+    width: calc(100vw - 1rem) !important;
+    left: 0.5rem !important;
+    right: 0.5rem !important;
+  }
+  
 }

@@ -49,7 +49,7 @@
     <!-- Блок с информацией (твой вариант, без изменений) -->
     <div class="flex-1 flex flex-column justify-content-between">
       <div>
-        <div class="font-bold mb-1 text-base md:text-lg">{{ result.Title }}</div>
+        <div class="font-bold mb-1 text-base md:text-lg">{{ getDisplayTitle(result) }}</div>
         <div class="flex flex-wrap gap-3 mb-2 text-sm justify-content-between align-items-center">
           <span>{{ getCategory(result.Title) === 'series' ? 'Сериал' : 'Фильм' }} • {{ result.Tracker }}</span>
           <span>
