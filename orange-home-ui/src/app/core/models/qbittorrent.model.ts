@@ -11,6 +11,7 @@ export interface TorrentInfo {
   size: number;
   category: string;
   save_path: string;
+  eta: number;
 }
 
 export interface ServerState {

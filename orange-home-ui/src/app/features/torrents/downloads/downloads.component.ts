@@ -143,6 +143,21 @@ export class DownloadsComponent implements OnInit, OnDestroy {
     return this.formatSize(bytesPerSec) + '/s';
   }
 
+  formatEta(seconds: number): string {
+    // 8640000 или -1 в qBittorrent означает "неизвестно" или "бесконечно" (например, при сидировании)
+    if (seconds < 0 || seconds >= 8640000) {
+      return '∞';
+    }
+    
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+
+    if (days > 0) return `${days}д ${hours}ч`;
+    if (hours > 0) return `${hours}ч ${minutes}м`;
+    return `${minutes}м`;
+  }
+
   getStateLabel(state: string): string {
     const labels: Record<string, string> = {
       'error': '❌ Ошибка', 'missingFiles': '❗ Файлы отсутствуют', 'uploading': '⬆️ Раздаётся',
