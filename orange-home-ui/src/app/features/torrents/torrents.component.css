@@ -21,3 +21,8 @@
 .toolbar {
     margin-top: -42px;
 }
+
+:host ::ng-deep .p-tablist-content .p-tablist-tab-list {
+  display: inline-flex !important;
+  width: auto !important;
+}

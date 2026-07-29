@@ -1,9 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
-import { catchError, tap, switchMap } from 'rxjs/operators';
+import { catchError, tap, switchMap, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { TorrentInfo } from '../models/qbittorrent.model';
+import { SyncMainDataResponse, TorrentInfo } from '../models/qbittorrent.model';
 
 @Injectable({
   providedIn: 'root'
@@ -95,4 +95,13 @@ export class QBittorrentService {
       })
     );
   }
+
+  getFreeSpace(): Observable<number> {
+    return this.ensureAuth(
+      this.http.get<SyncMainDataResponse>(`${this.apiBase}/sync/maindata?rid=0`).pipe(
+        map(response => response.server_state?.free_space_on_disk || 0)
+      )
+    );
+  }
+
 }

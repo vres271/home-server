@@ -4,7 +4,7 @@ import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { MessageService } from 'primeng/api';
-import { finalize, tap, concatMap, map } from 'rxjs/operators'; // <-- Добавили map
+import { finalize, tap, concatMap, map } from 'rxjs/operators';
 import { interval, Subject, Observable } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -25,13 +25,17 @@ export class DownloadsComponent implements OnInit, OnDestroy {
 
   activeTorrents: TorrentInfo[] = [];
   downloadsLoading = false;
+  freeSpace: number = 0;
+  
   private destroy$ = new Subject<void>();
-
   private readonly refreshInterval = 5000;
+  private readonly freeSpaceInterval = 30000; // <-- 30 секунд для диска
 
   ngOnInit() {
     this.loadTorrents();
-    this.startAutoUpdate();
+    this.loadFreeSpace();               // 1. Загружаем сразу при старте
+    this.startAutoUpdate();             // 2. Таймер торрентов (5 сек)
+    this.startFreeSpaceAutoUpdate();    // 3. Таймер диска (30 сек)
   }
 
   ngOnDestroy() {
@@ -39,14 +43,10 @@ export class DownloadsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  /**
-   * Базовый метод: получает список и сортирует его по времени добавления (новые сверху)
-   */
   private fetchAndSortTorrents(): Observable<TorrentInfo[]> {
     return this.qbService.getTorrents().pipe(
       map(torrents => 
         [...torrents].sort((a, b) => {
-          // Сортировка по убыванию: если b добавлен позже (больше timestamp), он идет первым
           const timeA = a.added_on || 0;
           const timeB = b.added_on || 0;
           return timeB - timeA;
@@ -59,34 +59,39 @@ export class DownloadsComponent implements OnInit, OnDestroy {
     interval(this.refreshInterval)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
-        // Используем новый метод, чтобы фоновое обновление тоже было отсортировано
         this.fetchAndSortTorrents().subscribe({
           next: (torrents) => { this.activeTorrents = torrents; },
-          error: () => {} // Тихо игнорируем ошибки фонового опроса
+          error: () => {}
         });
       });
   }
 
-  /**
-   * Единый метод для получения списка с управлением состоянием загрузки (спиннер)
-   */
+  private loadFreeSpace() {
+    this.qbService.getFreeSpace().subscribe({
+      next: (size) => { this.freeSpace = size || 0; },
+      error: () => {} // Тихо игнорируем
+    });
+  }
+
+  private startFreeSpaceAutoUpdate() {
+    interval(this.freeSpaceInterval)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => this.loadFreeSpace());
+  }
+
   private refreshList(): Observable<TorrentInfo[]> {
     this.downloadsLoading = true;
-    return this.fetchAndSortTorrents().pipe( // <-- Теперь здесь тоже сортировка
+    return this.fetchAndSortTorrents().pipe(
       finalize(() => this.downloadsLoading = false)
     );
   }
 
-  /**
-   * Ручное обновление по кнопке
-   */
   loadTorrents() {
     this.refreshList().subscribe({
-      next: (torrents) => {
-        this.activeTorrents = torrents;
-      },
+      next: (torrents) => { this.activeTorrents = torrents; },
       error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось получить список' })
     });
+    this.loadFreeSpace();
   }
 
   pauseTorrent(hash: string) {
@@ -94,9 +99,7 @@ export class DownloadsComponent implements OnInit, OnDestroy {
       tap(() => this.messageService.add({ severity: 'warn', summary: 'Пауза', detail: 'Загрузка приостановлена' })),
       concatMap(() => this.refreshList())
     ).subscribe({
-      next: (torrents) => {
-        this.activeTorrents = torrents;
-      },
+      next: (torrents) => { this.activeTorrents = torrents; },
       error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' })
     });
   }
@@ -106,9 +109,7 @@ export class DownloadsComponent implements OnInit, OnDestroy {
       tap(() => this.messageService.add({ severity: 'success', summary: 'Возобновлено', detail: 'Загрузка возобновлена' })),
       concatMap(() => this.refreshList())
     ).subscribe({
-      next: (torrents) => {
-        this.activeTorrents = torrents;
-      },
+      next: (torrents) => { this.activeTorrents = torrents; },
       error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' })
     });
   }
@@ -117,11 +118,10 @@ export class DownloadsComponent implements OnInit, OnDestroy {
     if (confirm(`Удалить "${name}"?\n\nФайлы на диске также будут удалены.`)) {
       this.qbService.deleteTorrent(hash, true).pipe(
         tap(() => this.messageService.add({ severity: 'info', summary: 'Удалено', detail: 'Торрент и файлы удалены' })),
-        concatMap(() => this.refreshList())
+        concatMap(() => this.refreshList()), // Сначала обновляем список
+        tap(() => this.loadFreeSpace())      // И сразу обновляем свободное место
       ).subscribe({
-        next: (torrents) => {
-          this.activeTorrents = torrents;
-        },
+        next: (torrents) => { this.activeTorrents = torrents; },
         error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' })
       });
     }

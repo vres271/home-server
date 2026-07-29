@@ -12,3 +12,13 @@ export interface TorrentInfo {
   category: string;
   save_path: string;
 }
+
+export interface ServerState {
+  free_space_on_disk: number;
+}
+
+export interface SyncMainDataResponse {
+  rid: number;
+  full_update: boolean;
+  server_state: ServerState;
+}

@@ -1,13 +1,21 @@
 <p-toast position="bottom-right"></p-toast>
 
 <div class="flex justify-content-end mb-2" style="margin-top: -44px;">
-  <p-button 
-    icon="pi pi-refresh" 
-    severity="secondary" 
-    size="small" 
-    (onClick)="loadTorrents()" 
-    [loading]="downloadsLoading">
-  </p-button>
+  <div class="flex align-items-center gap-3">
+    
+    <span class="text-sm inline-flex align-items-center gap-1">
+      <span class="text-500">{{ formatSize(freeSpace) }}</span>
+    </span>
+    
+    <p-button 
+      icon="pi pi-refresh" 
+      severity="secondary" 
+      size="small" 
+      (onClick)="loadTorrents()" 
+      [loading]="downloadsLoading">
+    </p-button>
+    
+  </div>
 </div>
 
 <div *ngIf="downloadsLoading" class="text-center p-4">
@@ -34,7 +42,7 @@
         {{ formatSpeed(torrent.dlspeed) }}
       </span>
       <span *ngIf="torrent.state === 'uploading'" class="text-sm text-blue-400">
-        {{ formatSpeed( torrent.upspeed) }}
+        {{ formatSpeed(torrent.upspeed) }}
       </span>
     </div>
     <div class="flex gap-2">
