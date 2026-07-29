@@ -1,10 +1,12 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
 import { MessageService } from 'primeng/api';
-import { finalize } from 'rxjs/operators';
+import { finalize, tap, concatMap, map } from 'rxjs/operators'; // <-- Добавили map
+import { interval, Subject, Observable } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 
 import { QBittorrentService } from '../../../core/services/qbittorrent.service';
 import { TorrentInfo } from '../../../core/models/qbittorrent.model';
@@ -17,27 +19,112 @@ import { TorrentInfo } from '../../../core/models/qbittorrent.model';
   templateUrl: './downloads.component.html',
   styleUrls: ['./downloads.component.css']
 })
-export class DownloadsComponent implements OnInit {
+export class DownloadsComponent implements OnInit, OnDestroy {
   private qbService = inject(QBittorrentService);
   private messageService = inject(MessageService);
 
   activeTorrents: TorrentInfo[] = [];
   downloadsLoading = false;
+  private destroy$ = new Subject<void>();
+
+  private readonly refreshInterval = 5000;
 
   ngOnInit() {
     this.loadTorrents();
+    this.startAutoUpdate();
   }
 
-  loadTorrents() {
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  /**
+   * Базовый метод: получает список и сортирует его по времени добавления (новые сверху)
+   */
+  private fetchAndSortTorrents(): Observable<TorrentInfo[]> {
+    return this.qbService.getTorrents().pipe(
+      map(torrents => 
+        [...torrents].sort((a, b) => {
+          // Сортировка по убыванию: если b добавлен позже (больше timestamp), он идет первым
+          const timeA = a.added_on || 0;
+          const timeB = b.added_on || 0;
+          return timeB - timeA;
+        })
+      )
+    );
+  }
+
+  private startAutoUpdate() {
+    interval(this.refreshInterval)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(() => {
+        // Используем новый метод, чтобы фоновое обновление тоже было отсортировано
+        this.fetchAndSortTorrents().subscribe({
+          next: (torrents) => { this.activeTorrents = torrents; },
+          error: () => {} // Тихо игнорируем ошибки фонового опроса
+        });
+      });
+  }
+
+  /**
+   * Единый метод для получения списка с управлением состоянием загрузки (спиннер)
+   */
+  private refreshList(): Observable<TorrentInfo[]> {
     this.downloadsLoading = true;
-    this.qbService.getTorrents().pipe(
+    return this.fetchAndSortTorrents().pipe( // <-- Теперь здесь тоже сортировка
       finalize(() => this.downloadsLoading = false)
-    ).subscribe({
+    );
+  }
+
+  /**
+   * Ручное обновление по кнопке
+   */
+  loadTorrents() {
+    this.refreshList().subscribe({
       next: (torrents) => {
         this.activeTorrents = torrents;
       },
       error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось получить список' })
     });
+  }
+
+  pauseTorrent(hash: string) {
+    this.qbService.stopTorrent(hash).pipe(
+      tap(() => this.messageService.add({ severity: 'warn', summary: 'Пауза', detail: 'Загрузка приостановлена' })),
+      concatMap(() => this.refreshList())
+    ).subscribe({
+      next: (torrents) => {
+        this.activeTorrents = torrents;
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' })
+    });
+  }
+
+  resumeTorrent(hash: string) {
+    this.qbService.startTorrent(hash).pipe(
+      tap(() => this.messageService.add({ severity: 'success', summary: 'Возобновлено', detail: 'Загрузка возобновлена' })),
+      concatMap(() => this.refreshList())
+    ).subscribe({
+      next: (torrents) => {
+        this.activeTorrents = torrents;
+      },
+      error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' })
+    });
+  }
+
+  deleteTorrent(hash: string, name: string) {
+    if (confirm(`Удалить "${name}"?\n\nФайлы на диске также будут удалены.`)) {
+      this.qbService.deleteTorrent(hash, true).pipe(
+        tap(() => this.messageService.add({ severity: 'info', summary: 'Удалено', detail: 'Торрент и файлы удалены' })),
+        concatMap(() => this.refreshList())
+      ).subscribe({
+        next: (torrents) => {
+          this.activeTorrents = torrents;
+        },
+        error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' })
+      });
+    }
   }
 
   formatSize(bytes: number): string {
@@ -54,29 +141,6 @@ export class DownloadsComponent implements OnInit {
 
   formatSpeed(bytesPerSec: number): string {
     return this.formatSize(bytesPerSec) + '/s';
-  }
-
-  pauseTorrent(hash: string) {
-    this.qbService.stopTorrent(hash).subscribe(() => {
-      this.messageService.add({ severity: 'warn', summary: 'Пауза', detail: 'Загрузка приостановлена' });
-      this.loadTorrents();
-    });
-  }
-
-  resumeTorrent(hash: string) {
-    this.qbService.startTorrent(hash).subscribe(() => {
-      this.messageService.add({ severity: 'success', summary: 'Возобновлено', detail: 'Загрузка возобновлена' });
-      this.loadTorrents();
-    });
-  }
-
-  deleteTorrent(hash: string, name: string) {
-    if (confirm(`Удалить "${name}"?\n\nФайлы на диске также будут удалены.`)) {
-      this.qbService.deleteTorrent(hash, true).subscribe(() => {
-        this.messageService.add({ severity: 'info', summary: 'Удалено', detail: 'Торрент и файлы удалены' });
-        this.loadTorrents();
-      });
-    }
   }
 
   getStateLabel(state: string): string {

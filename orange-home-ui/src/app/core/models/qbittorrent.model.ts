@@ -1,6 +1,7 @@
 export interface TorrentInfo {
   hash: string;
   name: string;
+  added_on: number;
   state: string; // pausedDL, downloading, stalledDL, etc.
   progress: number; // от 0 до 1
   dlspeed: number; // байт/сек
