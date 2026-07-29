@@ -46,7 +46,11 @@ export class SearchComponent {
   }
 
   isSeries(title: string): boolean {
-    return /s\d{2}e\d{2}|сезон|серия|season|episode/i.test(title.toLowerCase());
+    // Приводим к нижнему регистру для надежного поиска
+    const lowerTitle = title.toLowerCase();
+    
+    // Проверяем на наличие паттернов сериалов
+    return /s\d{1,2}(e\d{1,2})?|сезон|серия|season|episode|\d{1,2}[хx]\d{1,2}/i.test(lowerTitle);
   }
 
   getDisplayTitle(result: JackettResult): string {
@@ -81,15 +85,17 @@ export class SearchComponent {
   }
 
   addTorrent(result: JackettResult) {
+    // 1. Сначала получаем правильное, полное название
     const displayName = this.getDisplayTitle(result);
+    
+    // 2. Проверяем на сериал ИМЕННО полное название!
     const isSeries = this.isSeries(displayName);
     const category = this.getCategory(displayName);
     
-    let torrentUrl = result.MagnetUri; // Запасной вариант
+    let torrentUrl = result.MagnetUri;
 
     if (result.Link && !result.Link.startsWith('magnet:')) {
-      const currentOrigin = 'http://192.168.0.150';
-      torrentUrl = result.Link.replace(/^https?:\/\/[^/]+(\/dl\/.*)$/i, `${currentOrigin}/api/jackett$1`);
+      torrentUrl = result.Link.replace(/^https?:\/\/[^/]+(\/dl\/.*)$/i, `http://192.168.0.150/api/jackett$1`);
     }
 
     this.qbService.addTorrent(torrentUrl, isSeries, category).subscribe({
@@ -101,7 +107,7 @@ export class SearchComponent {
         });
       },
       error: (err) => {
-        console.error('❌ Ошибка добавления через прямую ссылку:', err);
+        console.error('❌ Ошибка добавления:', err);
         
         if (result.MagnetUri && torrentUrl !== result.MagnetUri) {
           this.qbService.addTorrent(result.MagnetUri, isSeries, category).subscribe({
@@ -118,7 +124,7 @@ export class SearchComponent {
       }
     });
   }
-
+  
   onImageError(event: any) {
     event.target.style.display = 'none';
   }

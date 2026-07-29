@@ -3,7 +3,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, tap, switchMap, map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
-import { SyncMainDataResponse, TorrentInfo } from '../models/qbittorrent.model';
+import { SyncMainDataResponse, TorrentFile, TorrentInfo } from '../models/qbittorrent.model';
 
 @Injectable({
   providedIn: 'root'
@@ -53,7 +53,7 @@ export class QBittorrentService {
       .set('category', category)
       .set('sequentialDownload', String(environment.torrents.sequentialDownload))
       .set('firstLastPiecePrio', String(environment.torrents.firstLastPiecePrio))
-      .set('paused', String(isSeries)); // Сериалы ставим на паузу для выбора серий
+      .set('stopped', String(isSeries)); // Сериалы ставим на паузу для выбора серий
 
     return this.ensureAuth(
       this.http.post(`${this.apiBase}/torrents/add`, body.toString(), {
@@ -101,6 +101,34 @@ export class QBittorrentService {
       this.http.get<SyncMainDataResponse>(`${this.apiBase}/sync/maindata?rid=0`).pipe(
         map(response => response.server_state?.free_space_on_disk || 0)
       )
+    );
+  }
+
+  /**
+   * Получить список файлов торрента
+   */
+  getTorrentFiles(hash: string): Observable<TorrentFile[]> {
+    return this.ensureAuth(
+      this.http.get<TorrentFile[]>(`${this.apiBase}/torrents/files`, {
+        params: new HttpParams().set('hash', hash) // <-- ИЗМЕНИЛИ 'hashes' НА 'hash'
+      })
+    );
+  }
+
+  /**
+   * Установить приоритет для файлов торрента
+   */
+  setFilePriority(hash: string, fileIds: number[], priority: number): Observable<any> {
+    const body = new HttpParams()
+      .set('hash', hash) // <-- ИЗМЕНИЛИ 'hashes' НА 'hash'
+      .set('id', fileIds.join('|'))
+      .set('priority', priority.toString());
+
+    return this.ensureAuth(
+      this.http.post(`${this.apiBase}/torrents/filePrio`, body.toString(), {
+        responseType: 'text',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      })
     );
   }
 

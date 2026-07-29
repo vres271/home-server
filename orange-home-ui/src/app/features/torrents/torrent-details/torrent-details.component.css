@@ -1,0 +1,13 @@
+.file-list {
+  background-color: var(--surface-card);
+  -webkit-overflow-scrolling: touch;
+}
+
+.border-bottom-1:last-child {
+  border-bottom: none !important;
+}
+
+.cursor-pointer {
+  -webkit-tap-highlight-color: transparent;
+}
+

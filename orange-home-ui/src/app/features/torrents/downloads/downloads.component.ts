@@ -10,11 +10,12 @@ import { takeUntil } from 'rxjs/operators';
 
 import { QBittorrentService } from '../../../core/services/qbittorrent.service';
 import { TorrentInfo } from '../../../core/models/qbittorrent.model';
+import { TorrentDetailsComponent } from '../torrent-details/torrent-details.component';
 
 @Component({
   selector: 'app-torrent-downloads',
   standalone: true,
-  imports: [CommonModule, ButtonModule, ToastModule, ProgressBarModule],
+  imports: [CommonModule, ButtonModule, ToastModule, ProgressBarModule, TorrentDetailsComponent],
   providers: [MessageService],
   templateUrl: './downloads.component.html',
   styleUrls: ['./downloads.component.css']
@@ -26,6 +27,9 @@ export class DownloadsComponent implements OnInit, OnDestroy {
   activeTorrents: TorrentInfo[] = [];
   downloadsLoading = false;
   freeSpace: number = 0;
+
+  showDetailsDialog = false;
+  selectedTorrent: TorrentInfo | null = null;
   
   private destroy$ = new Subject<void>();
   private readonly refreshInterval = 5000;
@@ -158,6 +162,17 @@ export class DownloadsComponent implements OnInit, OnDestroy {
     return `${minutes}м`;
   }
 
+  // Добавь метод:
+  openTorrentDetails(torrent: TorrentInfo) {
+    this.selectedTorrent = torrent;
+    this.showDetailsDialog = true;
+  }
+
+  // После успешного действия (пауза/возобновление/удаление) обнови список:
+  onTorrentUpdated() {
+    this.loadTorrents();
+  }
+
   getStateLabel(state: string): string {
     const labels: Record<string, string> = {
       'error': '❌ Ошибка', 'missingFiles': '❗ Файлы отсутствуют', 'uploading': '⬆️ Раздаётся',
@@ -169,4 +184,10 @@ export class DownloadsComponent implements OnInit, OnDestroy {
     };
     return labels[state] || `❓ ${state}`;
   }
+
+  onDialogHide() {
+    this.showDetailsDialog = false;
+    this.selectedTorrent = null;
+  }
+
 }
