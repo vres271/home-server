@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, EventEmitter, inject, Output } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -20,6 +20,9 @@ import { JackettResult } from '../../../core/models/jackett.model';
   styleUrls: ['./search.component.css']
 })
 export class SearchComponent {
+
+  @Output() torrentAdded = new EventEmitter<void>();
+
   private jackettService = inject(JackettService);
   private qbService = inject(QBittorrentService);
   private messageService = inject(MessageService);
@@ -105,6 +108,7 @@ export class SearchComponent {
           summary: 'Успех', 
           detail: `"${displayName}" добавлен (${isSeries ? 'на паузу' : 'в загрузку'})` 
         });
+        this.torrentAdded.emit();
       },
       error: (err) => {
         console.error('❌ Ошибка добавления:', err);
@@ -113,6 +117,7 @@ export class SearchComponent {
           this.qbService.addTorrent(result.MagnetUri, isSeries, category).subscribe({
             next: () => {
               this.messageService.add({ severity: 'success', summary: 'Успех (Magnet)', detail: `"${displayName}" добавлен через магнет` });
+              this.torrentAdded.emit();
             },
             error: () => {
               this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось добавить торрент' });

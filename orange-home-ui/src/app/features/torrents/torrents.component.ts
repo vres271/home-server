@@ -11,5 +11,11 @@ import { DownloadsComponent } from './downloads/downloads.component';
   styleUrls: ['./torrents.component.css']
 })
 export class TorrentsComponent {
-  // Больше никакой логики здесь! Только переключение вкладок.
+
+  activeTabIndex = 1; 
+
+  onTorrentAdded() {
+    this.activeTabIndex = 0; 
+  }
+
 }

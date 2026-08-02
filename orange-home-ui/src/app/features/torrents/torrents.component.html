@@ -1,11 +1,10 @@
 <div class="card">
-  <p-tabView>
-    <!-- (onChange) автоматически обновит список при переключении на эту вкладку! -->
+  <p-tabView [(activeIndex)]="activeTabIndex">
     <p-tabPanel header="Загрузки">
       <app-torrent-downloads></app-torrent-downloads>
     </p-tabPanel>
     <p-tabPanel header="Поиск">
-      <app-torrent-search></app-torrent-search>
+      <app-torrent-search (torrentAdded)="onTorrentAdded()"></app-torrent-search>
     </p-tabPanel>
   </p-tabView>
 </div>
