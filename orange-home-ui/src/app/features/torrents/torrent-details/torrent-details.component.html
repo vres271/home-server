@@ -144,14 +144,15 @@
              (click)="toggleFile(file.index)">
 
           <div class="flex align-items-center justify-content-between gap-2 mb-1">
-            <p-checkbox 
-              [ngModel]="selectedFiles.has(file.index)" 
-              (ngModelChange)="toggleFile(file.index)"
-              [binary]="true"
-              (onClick)="$event.stopPropagation()">
-            </p-checkbox>
+            <div (click)="$event.stopPropagation()">
+              <p-checkbox 
+                [ngModel]="selectedFiles.has(file.index)" 
+                (ngModelChange)="toggleFile(file.index)"
+                [binary]="true">
+              </p-checkbox>
+            </div>
             
-            <div class="text-sm font-medium mb-1 break-all" 
+            <div class="text-sm font-medium mb-1 break-all flex-1" 
                 style="word-break: break-word; line-height: 1.25;"
                 [pTooltip]="file.name"
                 tooltipPosition="top">
