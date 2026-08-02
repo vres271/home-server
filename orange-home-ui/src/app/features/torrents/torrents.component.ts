@@ -3,6 +3,11 @@ import { TabViewModule } from 'primeng/tabview';
 import { SearchComponent } from './search/search.component';
 import { DownloadsComponent } from './downloads/downloads.component';
 
+const enum Tabs {
+  Downloads = 0,
+  Search = 0,
+}
+
 @Component({
   selector: 'app-torrents',
   standalone: true,
@@ -12,10 +17,10 @@ import { DownloadsComponent } from './downloads/downloads.component';
 })
 export class TorrentsComponent {
 
-  activeTabIndex = 1; 
+  activeTabIndex = Tabs.Downloads; 
 
   onTorrentAdded() {
-    this.activeTabIndex = 0; 
+    this.activeTabIndex = Tabs.Search; 
   }
 
 }
