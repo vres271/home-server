@@ -1,0 +1,25 @@
+{
+  "production": false,
+  "jackett": {
+    "apiUrl": "/api/jackett",
+    "apiKey": "ВАШ_API_KEY_ИЗ_НАСТРОЕК_JACKETT"
+  },
+  "qbittorrent": {
+    "apiUrl": "/api/qbittorrent",
+    "username": "",
+    "password": ""
+  },
+  "torrents": {
+    "defaultSavePath": "/mnt/shared",
+    "sequentialDownload": true,
+    "firstLastPiecePrio": true
+  },
+  "tmdb": {
+    "baseUrl": "/tmdb",
+    "imagesBaseUrl": "/tmdb-images",
+    "apiKey": "ВАШ_КОРОТКИЙ_API_KEY_ИЗ_TMDB",
+    "defaultLanguage": "ru-RU",
+    "defaultPosterSize": "w342",
+    "defaultBackdropSize": "w1280"
+  }
+}

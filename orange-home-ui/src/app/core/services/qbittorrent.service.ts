@@ -2,15 +2,17 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, throwError, BehaviorSubject } from 'rxjs';
 import { catchError, tap, switchMap, map } from 'rxjs/operators';
-import { environment } from '../../../environments/environment';
 import { SyncMainDataResponse, TorrentFile, TorrentInfo } from '../models/qbittorrent.model';
+import { ConfigService } from './config.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class QBittorrentService {
   private http = inject(HttpClient);
-  private apiBase = `${environment.qbittorrent.apiUrl}/api/v2`;
+  private readonly config = inject(ConfigService);
+  private readonly settings = this.config.settings;
+  private apiBase = `${this.settings.qbittorrent.apiUrl}/api/v2`;
   
   private isAuthenticated = new BehaviorSubject<boolean>(false);
 
@@ -20,8 +22,8 @@ export class QBittorrentService {
 
   private login(): Observable<any> {
     const body = new HttpParams()
-      .set('username', environment.qbittorrent.username)
-      .set('password', environment.qbittorrent.password);
+      .set('username', this.settings.qbittorrent.username)
+      .set('password', this.settings.qbittorrent.password);
 
     return this.http.post(`${this.apiBase}/auth/login`, body.toString(), {
       responseType: 'text',
@@ -49,10 +51,10 @@ export class QBittorrentService {
   addTorrent(magnetUrl: string, isSeries: boolean, category: string): Observable<any> {
     const body = new HttpParams()
       .set('urls', magnetUrl)
-      .set('savepath', environment.torrents.defaultSavePath)
+      .set('savepath', this.settings.torrents.defaultSavePath)
       .set('category', category)
-      .set('sequentialDownload', String(environment.torrents.sequentialDownload))
-      .set('firstLastPiecePrio', String(environment.torrents.firstLastPiecePrio))
+      .set('sequentialDownload', String(this.settings.torrents.sequentialDownload))
+      .set('firstLastPiecePrio', String(this.settings.torrents.firstLastPiecePrio))
       .set('stopped', String(isSeries)); // Сериалы ставим на паузу для выбора серий
 
     return this.ensureAuth(
