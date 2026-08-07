@@ -20,5 +20,23 @@
       "Host": "192.168.0.150:8080"
     },
     "logLevel": "debug"
+  },
+  "/tmdb": {
+    "target": "http://192.168.0.150",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/tmdb": "/tmdb"
+    },
+    "logLevel": "debug"
+  },
+  "/tmdb-images": {
+    "target": "http://192.168.0.150",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/tmdb-images": "/tmdb-images"
+    },
+    "logLevel": "debug"
   }
 }

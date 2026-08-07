@@ -1,81 +1,143 @@
 <p-toast position="bottom-right"></p-toast>
 
-<div class="flex flex-column md:flex-row gap-3 mb-4 mt-3">
-  <input 
-    pInputText 
-    type="text" 
-    [(ngModel)]="searchQuery" 
-    placeholder="Название фильма, сериала или раздачи..." 
-    class="w-full md:flex-1"
-    (keydown.enter)="search()"
-  />
-  <p-button 
-    label="Поиск" 
-    icon="pi pi-search" 
-    styleClass="w-full md:w-auto"
-    (onClick)="search()" 
-    [loading]="searchLoading">
-  </p-button>
-</div>
+<!-- 1. Новый компонент поиска TMDB -->
+<app-tmdb-search 
+  (mediaSelected)="onMediaSelected($event)"
+  (requestDirectSearch)="onRequestDirectSearch()">
+</app-tmdb-search>
 
-<!-- Сообщение "Ничего не найдено" (без изменений) -->
-<div *ngIf="!searchLoading && results.length === 0 && searchQuery" class="text-center p-4 text-500">
-  Ничего не найдено.
-</div>
-
-<!-- Контейнер для результатов с условным классом -->
-<div class="results-container" [class.is-searching]="searchLoading && results.length > 0">
-  
-  <!-- Оверлей, который появляется только при загрузке, если уже есть старые результаты -->
-  <div *ngIf="searchLoading && results.length > 0" class="loading-overlay">
-    <i class="pi pi-spin pi-spinner text-3xl mb-2"></i>
-    <span class="text-500 font-medium">Обновление результатов...</span>
+<!-- Разделитель и заголовок для прямого поиска -->
+@if (showDirectSearch) {
+  <div class="my-4 border-top-1 surface-border pt-4">
+    <h3 class="text-xl font-bold mb-3">Прямой поиск раздач</h3>
   </div>
+}
 
-  <!-- Список карточек -->
-  <div *ngFor="let result of results" class="torrent-card mb-2 md:mb-3 p-2 md:p-3 border-1 surface-border border-round flex flex-column md:flex-row gap-3">
-    
-    <!-- Блок с постером -->
-    <div *ngIf="result.Poster" class="poster-container flex-shrink-0 mx-auto md:mx-0">
-      <img 
-        [src]="result.Poster" 
-        [alt]="result.Title" 
-        class="poster-image" 
-        loading="lazy" 
-        (error)="onImageError($event)"
-      />
-    </div>
+<!-- 2. Старое поле поиска (теперь показывается только если включен прямой поиск) -->
+@if (showDirectSearch) {
+  <div class="flex flex-column md:flex-row gap-3 mb-4 mt-3">
+    <input 
+      pInputText 
+      type="text" 
+      [(ngModel)]="searchQuery" 
+      placeholder="Название раздачи, трекер, качество..." 
+      class="w-full md:flex-1"
+      (keydown.enter)="search()"
+    />
+    <p-button 
+      label="Поиск" 
+      icon="pi pi-search" 
+      styleClass="w-full md:w-auto"
+      (onClick)="search()" 
+      [loading]="searchLoading">
+    </p-button>
+  </div>
+}
 
-    <!-- Блок с информацией (твой вариант, без изменений) -->
-    <div class="flex-1 flex flex-column justify-content-between">
-      <div>
-        <div class="font-bold mb-1 text-base md:text-lg">{{ getDisplayTitle(result) }}</div>
-        <div class="flex flex-wrap gap-3 mb-2 text-sm justify-content-between align-items-center">
-          <span>{{ getCategory(result.Title) === 'series' ? 'Сериал' : 'Фильм' }} • {{ result.Tracker }}</span>
-          <span>
-            <span class="text-green-600 font-bold">{{ result.Seeders }}</span> / 
-            <span class="text-red-500">{{ result.Peers }}</span>
-          </span>
-          <span>{{ result.PublishDate | date:'dd.MM.yyyy' }}</span>
+<!-- Блок с информацией о выбранном фильме -->
+@if (selectedMedia) {
+  <div class="mb-4 p-3 border-1 surface-border border-round bg-surface-50">
+    <div class="flex align-items-center gap-3">
+      <i class="pi pi-check-circle text-green-500 text-xl"></i>
+      <div class="flex-1">
+        <div class="font-bold">
+          Выбрано: 
+          {{ selectedMedia.media_type === 'movie' ? selectedMedia.title : selectedMedia.name }}
+          @if (tmdbService.getYear(selectedMedia.media_type === 'movie' ? selectedMedia.release_date : selectedMedia.first_air_date); as year) {
+            ({{ year }})
+          }
         </div>
-        <div class="flex flex-wrap mt-2 text-sm justify-content-between align-items-center gap-2">
-          <span class="font-bold text-lg text-500">{{ formatSize(result.Size) }}</span>
-          <div class="flex align-items-center gap-2">
-            <span *ngIf="hasTorrentFile(result)" title=".torrent файл" class="inline-flex align-items-center justify-content-center text-xs  text-orange-700 border-round py-1" >
-              <i class="pi pi-file"></i>
-            </span>
-            <span *ngIf="hasMagnet(result)" title="Magnet-ссылка" class="inline-flex align-items-center justify-content-center text-xs  text-blue-700 border-round py-1" >
-              <i class="pi pi-link"></i>
-            </span>
-            <p-button 
-              icon="pi pi-download" 
-              severity="success" 
-              size="small" 
-              (onClick)="addTorrent(result)">
-            </p-button>
+        <div class="text-sm text-500">
+          @if (searchLoading) {
+            <i class="pi pi-spin pi-spinner mr-2"></i> Получаем данные и ищем раздачи...
+          } @else {
+            Поиск по идентификатору: <strong>"{{ searchQuery }}"</strong>
+          }
+        </div>
+      </div>
+      <p-button 
+        icon="pi pi-times" 
+        severity="secondary" 
+        text="true" 
+        rounded="true" 
+        (onClick)="selectedMedia = null; results = []; showDirectSearch = true; searchQuery = ''">
+      </p-button>
+    </div>
+  </div>
+}
+
+<!-- 4. Сообщение "Ничего не найдено" -->
+@if (!searchLoading && results.length === 0 && searchQuery) {
+  <div class="text-center p-4 text-500">
+    Ничего не найдено.
+  </div>
+}
+
+<!-- 5. Контейнер для результатов с условным классом (твоя старая структура) -->
+@if (results.length > 0 || searchLoading) {
+  <div class="results-container" [class.is-searching]="searchLoading && results.length > 0">
+    
+    <!-- Оверлей загрузки -->
+    @if (searchLoading && results.length > 0) {
+      <div class="loading-overlay">
+        <i class="pi pi-spin pi-spinner text-3xl mb-2"></i>
+        <span class="text-500 font-medium">Обновление результатов...</span>
+      </div>
+    }
+
+    <!-- Список карточек (твоя старая структура) -->
+    @for (result of results; track result.Guid) {
+      <div class="torrent-card mb-2 md:mb-3 p-2 md:p-3 border-1 surface-border border-round flex flex-column md:flex-row gap-3">
+        
+        <!-- Блок с постером -->
+        @if (result.Poster) {
+          <div class="poster-container flex-shrink-0 mx-auto md:mx-0">
+            <img 
+              [src]="result.Poster" 
+              [alt]="result.Title" 
+              class="poster-image" 
+              loading="lazy" 
+              (error)="onImageError($event)"
+            />
+          </div>
+        }
+
+        <!-- Блок с информацией -->
+        <div class="flex-1 flex flex-column justify-content-between">
+          <div>
+            <div class="font-bold mb-1 text-base md:text-lg">{{ getDisplayTitle(result) }}</div>
+            <div class="flex flex-wrap gap-3 mb-2 text-sm justify-content-between align-items-center">
+              <span>{{ getCategory(result.Title) === 'series' ? 'Сериал' : 'Фильм' }} • {{ result.Tracker }}</span>
+              <span>
+                <span class="text-green-600 font-bold">{{ result.Seeders }}</span> / 
+                <span class="text-red-500">{{ result.Peers }}</span>
+              </span>
+              <span>{{ result.PublishDate | date:'dd.MM.yyyy' }}</span>
+            </div>
+            <div class="flex flex-wrap mt-2 text-sm justify-content-between align-items-center gap-2">
+              <span class="font-bold text-lg text-500">{{ formatSize(result.Size) }}</span>
+              <div class="flex align-items-center gap-2">
+                @if (hasTorrentFile(result)) {
+                  <span title=".torrent файл" class="inline-flex align-items-center justify-content-center text-xs text-orange-700 border-round py-1 px-2 bg-orange-100">
+                    <i class="pi pi-file mr-1"></i>
+                  </span>
+                }
+                @if (hasMagnet(result)) {
+                  <span title="Magnet-ссылка" class="inline-flex align-items-center justify-content-center text-xs text-blue-700 border-round py-1 px-2 bg-blue-100">
+                    <i class="pi pi-link mr-1"></i>
+                  </span>
+                }
+                <p-button 
+                  icon="pi pi-download" 
+                  severity="success" 
+                  size="small" 
+                  (onClick)="addTorrent(result)">
+                </p-button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-    </div>
+    }
   </div>
-</div>
+}
