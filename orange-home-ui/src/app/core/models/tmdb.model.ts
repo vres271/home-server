@@ -20,3 +20,17 @@ export interface TmdbSearchResponse {
   total_results: number;
   results: TmdbSearchResult[];
 }
+
+export interface TmdbCredit {
+  name: string;
+  character?: string;
+  job?: string;
+  profile_path: string | null;
+}
+
+export interface TmdbVideo {
+  name: string;
+  key: string;
+  site: string;
+  type: string;
+}

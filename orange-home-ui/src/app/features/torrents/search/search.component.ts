@@ -5,6 +5,8 @@ import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
+import { IconFieldModule } from 'primeng/iconfield';
+import { InputIconModule } from 'primeng/inputicon';
 import { finalize } from 'rxjs/operators';
 
 import { TmdbService } from '../../../core/services/tmdb.service';
@@ -13,6 +15,7 @@ import { QBittorrentService } from '../../../core/services/qbittorrent.service';
 import { JackettResult } from '../../../core/models/jackett.model';
 import { TmdbSearchResult } from '../../../core/models/tmdb.model';
 import { TmdbSearchComponent } from '../tmdb-search/tmdb-search.component';
+import { MediaDetailsComponent } from '../media-details/media-details.component';
 
 @Component({
   selector: 'app-torrent-search',
@@ -24,7 +27,10 @@ import { TmdbSearchComponent } from '../tmdb-search/tmdb-search.component';
     ButtonModule, 
     ToastModule, 
     DatePipe,
-    TmdbSearchComponent // <-- Добавляем новый компонент
+    TmdbSearchComponent,
+    MediaDetailsComponent, 
+    IconFieldModule,
+    InputIconModule
   ],
   providers: [MessageService],
   templateUrl: './search.component.html',
@@ -42,17 +48,67 @@ export class SearchComponent {
   // Состояние для новой логики
   selectedMedia: TmdbSearchResult | null = null;
   showDirectSearch = false;
-  
+  viewState: 'search' | 'details' = 'search';
+  fullMediaDetails: any = null;
+  isLoadingDetails = false;
+
+  // 🔥 Сохраняем результаты TMDB для возврата
+  savedTmdbResults: TmdbSearchResult[] = [];
+  savedTmdbQuery: string = '';
+  savedTmdbHasSearched: boolean = false;
+
   // Состояние для Jackett (остается как было)
   searchQuery = '';
   results: JackettResult[] = [];
   searchLoading = false;
 
-  // 1. Пользователь выбрал фильм в TMDB
+  // 1. Пользователь выбрал фильм
   onMediaSelected(media: TmdbSearchResult) {
+    this.viewState = 'details';
     this.selectedMedia = media;
-    this.showDirectSearch = false;
-    this.searchJackettByImdbId(media); // <-- Вызываем новый метод
+    this.fullMediaDetails = null;
+    this.isLoadingDetails = true;
+    this.results = []; // Очищаем старые результаты Jackett
+
+    // 🔥 Сохраняем текущее состояние поиска TMDB
+    // (результаты приходят из TmdbSearchComponent через событие, но мы их не храним здесь)
+    // Поэтому добавим новое событие для сохранения
+
+    // Параллельно запускаем два запроса: за деталями и за торрентами
+    this.fetchMediaDetailsAndSearchJackett(media);
+  }
+
+  private fetchMediaDetailsAndSearchJackett(media: TmdbSearchResult) {
+    // А) Запрашиваем полные детали из TMDB
+    this.tmdbService.getFullDetails(media.id, media.media_type).subscribe({
+      next: (details) => {
+        this.fullMediaDetails = details;
+        this.isLoadingDetails = false;
+      },
+      error: () => {
+        this.isLoadingDetails = false;
+        this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось загрузить детали фильма' });
+      }
+    });
+
+    // Б) Запрашиваем раздачи из Jackett по imdb_id
+    this.searchJackettByImdbId(media);
+  }
+
+  // 2. Пользователь нажал "Назад"
+  onGoBack() {
+    this.viewState = 'search';
+    this.selectedMedia = null;
+    this.fullMediaDetails = null;
+    this.results = [];
+    // 🔥 НЕ очищаем savedTmdbResults — они останутся для TmdbSearchComponent
+  }
+
+  // 🔥 Новое событие: TmdbSearchComponent сообщает о результатах поиска
+  onTmdbSearchCompleted(event: { results: TmdbSearchResult[], query: string, hasSearched: boolean }) {
+    this.savedTmdbResults = event.results;
+    this.savedTmdbQuery = event.query;
+    this.savedTmdbHasSearched = event.hasSearched;
   }
 
   // 2. Новый метод: получаем imdb_id из TMDB, затем ищем в Jackett
@@ -103,38 +159,14 @@ export class SearchComponent {
     });
   }
 
-  // 2. Пользователь нажал "Прямой поиск"
+  // 3. Пользователь нажал "Прямой поиск"
   onRequestDirectSearch() {
+    this.viewState = 'search';
     this.showDirectSearch = true;
     this.selectedMedia = null;
-    this.searchQuery = ''; // Сбрасываем поле ввода для прямого поиска
+    this.fullMediaDetails = null;
+    this.searchQuery = '';
     this.results = [];
-  }
-
-  // 3. Поиск в Jackett по выбранному медиа (используем Название + Год)
-  private searchJackettByMedia(media: TmdbSearchResult) {
-    this.searchLoading = true;
-    this.results = [];
-
-    const title = this.tmdbService.getTitle(media);
-    // const year = this.tmdbService.getYear(media.media_type === 'movie' ? media.release_date : media.first_air_date);
-    
-    // Формируем умный запрос: "Дюна: Часть вторая 2024"
-    // this.searchQuery = year ? `${title} ${year}` : title;
-
-    this.searchQuery = title;
-
-    this.jackettService.search(this.searchQuery).pipe(
-      finalize(() => this.searchLoading = false)
-    ).subscribe({
-      next: (res) => {
-        this.results = res.Results || [];
-        if (this.results.length === 0) {
-          this.messageService.add({ severity: 'info', summary: 'Информация', detail: 'Раздачи не найдены. Попробуйте прямой поиск.' });
-        }
-      },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось выполнить поиск в Jackett' })
-    });
   }
 
   // 4. Прямой поиск (твоя старая логика)
@@ -153,6 +185,11 @@ export class SearchComponent {
       },
       error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось выполнить поиск' })
     });
+  }
+
+  clearDirectSearch(): void {
+    this.searchQuery = '';
+    this.results = [];
   }
 
   // --- Все твои существующие методы (без изменений) ---

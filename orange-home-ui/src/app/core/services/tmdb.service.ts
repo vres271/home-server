@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { ConfigService } from './config.service';
 import { TmdbSearchResponse, TmdbSearchResult } from '../models/tmdb.model';
 
@@ -30,7 +30,14 @@ export class TmdbService {
       .set('language', this.language)
       .set('include_adult', 'false');
 
-    return this.http.get<TmdbSearchResponse>(`${this.apiBaseUrl}/3/search/multi`, { params });
+    return this.http.get<TmdbSearchResponse>(`${this.apiBaseUrl}/3/search/multi`, { params }).pipe(
+      map(response => ({
+        ...response,
+        results: response.results.filter(
+          (item: any) => item.media_type !== 'person'
+        ) as TmdbSearchResult[]
+      }))
+    );
   }
 
   /**
@@ -77,5 +84,17 @@ export class TmdbService {
       { params: new HttpParams().set('api_key', this.apiKey) }
     );
   }
-  
+
+  /**
+   * Получает полную информацию о фильме или сериале (с актерами и видео)
+   */
+  getFullDetails(id: number, mediaType: 'movie' | 'tv'): Observable<any> {
+    const params = new HttpParams()
+      .set('api_key', this.apiKey)
+      .set('language', this.language)
+      .set('append_to_response', 'videos,credits'); // Магия TMDB: всё в одном запросе
+
+    return this.http.get<any>(`${this.apiBaseUrl}/3/${mediaType}/${id}`, { params });
+  }
+
 }

@@ -1,0 +1,87 @@
+<div class="media-details-container">
+  <!-- Кнопка Назад -->
+  <button pButton icon="pi pi-arrow-left" label="Назад к результатам" class="p-button-text mb-3" (click)="goBack.emit()"></button>
+
+  @if (isLoadingDetails) {
+    <div class="flex justify-content-center align-items-center py-8">
+      <i class="pi pi-spin pi-spinner text-4xl text-primary"></i>
+    </div>
+  } @else if (fullDetails) {
+    
+    <!-- Backdrop с постером внутри -->
+    <div class="backdrop-wrapper">
+      @if (getBackdrop(); as backdrop) {
+        <img [src]="backdrop" class="backdrop-image" alt="backdrop" />
+      }
+      
+      <!-- Постер внутри backdrop -->
+      <div class="poster-col">
+        @if (getPoster(); as poster) {
+          <img [src]="poster" class="poster-image shadow-4" alt="poster" />
+        } @else {
+          <div class="poster-placeholder shadow-4">
+            <i class="pi pi-image text-6xl text-400"></i>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Контент ниже backdrop -->
+    <div class="content-wrapper">
+      <div class="info-col">
+        <h1 class="title mb-2">{{ getTitle() }}</h1>
+        
+      <div class="meta-row mb-4">
+        <!-- Первая строка: год, рейтинг, длительность (всегда вместе) -->
+        <div class="flex flex-wrap gap-3 mb-2">
+          <span class="flex align-items-center gap-1">
+            <i class="pi pi-calendar text-500"></i> {{ getYear() }}
+          </span>
+          <span class="flex align-items-center gap-1">
+            <i class="pi pi-star-fill text-yellow-500"></i> 
+            <strong>{{ media.vote_average | number:'1.1-1' }}</strong>
+          </span>
+          @if (media.media_type === 'movie' && fullDetails.runtime) {
+            <span class="flex align-items-center gap-1">
+              <i class="pi pi-clock text-500"></i> {{ fullDetails.runtime }} мин.
+            </span>
+          }
+        </div>
+        
+        <!-- Вторая строка: жанры (всегда отдельной строкой) -->
+        @if (fullDetails.genres && fullDetails.genres.length > 0) {
+          <div class="flex flex-wrap gap-2">
+            @for (genre of fullDetails.genres; track genre.id) {
+              <p-tag [value]="genre.name" severity="secondary"></p-tag>
+            }
+          </div>
+        }
+      </div>
+
+        <h3 class="text-xl font-semibold mb-2">Описание</h3>
+        <p class="overview text-500 line-height-3 mb-4">{{ fullDetails.overview || 'Описание отсутствует.' }}</p>
+
+        @if (getTopCast().length > 0) {
+          <h3 class="text-xl font-semibold mb-3">В главных ролях</h3>
+          <div class="cast-list flex gap-3 overflow-x-auto pb-2">
+            @for (actor of getTopCast(); track actor.id) {
+              <div class="cast-item flex flex-column align-items-center text-center" style="min-width: 80px;">
+                @if (actor.profile_path) {
+                  <img [src]="tmdb.getPosterUrl(actor.profile_path)" class="cast-photo border-round mb-2" alt="actor" />
+                } @else {
+                  <div class="cast-photo border-round mb-2 bg-surface-200 flex align-items-center justify-content-center">
+                    <i class="pi pi-user text-2xl text-400"></i>
+                  </div>
+                }
+                <span class="text-sm font-semibold line-height-2">{{ actor.name }}</span>
+                @if (actor.character) {
+                  <span class="text-xs text-500 line-height-2">{{ actor.character }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
