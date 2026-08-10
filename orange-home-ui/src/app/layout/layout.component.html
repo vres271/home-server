@@ -2,8 +2,7 @@
   <!-- Боковое меню (десктоп) -->
   <aside class="layout-sidebar desktop-only">
     <div class="logo">
-      <i class="pi pi-server" style="font-size: 1.5rem; margin-right: 0.5rem;"></i>
-      <span>OrangePi Hub</span>
+      <span>Hub</span>
     </div>
     
     <ul class="layout-menu">
@@ -25,8 +24,7 @@
     styleClass="mobile-sidebar">
     <ng-template pTemplate="header">
       <div class="logo">
-        <i class="pi pi-server" style="font-size: 1.5rem; margin-right: 0.5rem;"></i>
-        <span>OrangePi Hub</span>
+        <span>Hub</span>
       </div>
     </ng-template>
     
@@ -46,8 +44,9 @@
   <main class="layout-main">
     <!-- Верхняя панель -->
     <p-toolbar styleClass="mb-2 md:mb-3">
-      <div class="p-toolbar-group-start">
+      <div class="p-toolbar-group-start align-items-center">
         <button pButton icon="pi pi-bars" class="p-button-text p-button-rounded mobile-menu-btn" (click)="toggleMobileMenu()"></button>
+        <img src="favicon.svg" alt="OrangePi Hub" class="logo-img"/>
         <span class="font-bold text-xl ml-2">OrangePi Home Server</span>
       </div>
       <div class="p-toolbar-group-end">
