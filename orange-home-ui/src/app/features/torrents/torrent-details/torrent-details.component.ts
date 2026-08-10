@@ -80,8 +80,9 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
 
     this.qbService.getTorrentFiles(this.torrentInfo.hash).subscribe({
       next: (files) => {
-        this.files = files;
+        this.files = [...files];
         this.computeCommonParts();
+        this.sortFiles();
         this.loading = false;
         this.cdr.markForCheck();
       },
@@ -316,4 +317,11 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
 
     return shortName;
   }
+
+  private sortFiles(): void {
+    this.files.sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' })
+    );
+  }
+
 }
