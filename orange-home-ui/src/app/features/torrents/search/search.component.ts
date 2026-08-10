@@ -1,5 +1,5 @@
-import { Component, EventEmitter, inject, Output } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { Component, EventEmitter, inject, Output, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
 import { ButtonModule } from 'primeng/button';
@@ -16,19 +16,21 @@ import { JackettResult } from '../../../core/models/jackett.model';
 import { TmdbSearchResult } from '../../../core/models/tmdb.model';
 import { TmdbSearchComponent } from '../tmdb-search/tmdb-search.component';
 import { MediaDetailsComponent } from '../media-details/media-details.component';
+import { TorrentResultsComponent } from '../torrent-results/torrent-results.component';
 
 @Component({
   selector: 'app-torrent-search',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule, 
     FormsModule, 
     InputTextModule, 
     ButtonModule, 
     ToastModule, 
-    DatePipe,
     TmdbSearchComponent,
-    MediaDetailsComponent, 
+    MediaDetailsComponent,
+    TorrentResultsComponent,
     IconFieldModule,
     InputIconModule
   ],
@@ -44,122 +46,42 @@ export class SearchComponent {
   private jackettService = inject(JackettService);
   private qbService = inject(QBittorrentService);
   private messageService = inject(MessageService);
+  private cdr = inject(ChangeDetectorRef);
 
-  // Состояние для новой логики
   selectedMedia: TmdbSearchResult | null = null;
   showDirectSearch = false;
   viewState: 'search' | 'details' = 'search';
   fullMediaDetails: any = null;
   isLoadingDetails = false;
 
-  // 🔥 Сохраняем результаты TMDB для возврата
   savedTmdbResults: TmdbSearchResult[] = [];
   savedTmdbQuery: string = '';
   savedTmdbHasSearched: boolean = false;
 
-  // Состояние для Jackett (остается как было)
   searchQuery = '';
   results: JackettResult[] = [];
   searchLoading = false;
 
-  // 1. Пользователь выбрал фильм
+  // ─── Навигация ───────────────────────────────────────────
+
   onMediaSelected(media: TmdbSearchResult) {
     this.viewState = 'details';
     this.selectedMedia = media;
     this.fullMediaDetails = null;
     this.isLoadingDetails = true;
-    this.results = []; // Очищаем старые результаты Jackett
-
-    // 🔥 Сохраняем текущее состояние поиска TMDB
-    // (результаты приходят из TmdbSearchComponent через событие, но мы их не храним здесь)
-    // Поэтому добавим новое событие для сохранения
-
-    // Параллельно запускаем два запроса: за деталями и за торрентами
+    this.results = [];
+    this.cdr.markForCheck();
     this.fetchMediaDetailsAndSearchJackett(media);
   }
 
-  private fetchMediaDetailsAndSearchJackett(media: TmdbSearchResult) {
-    // А) Запрашиваем полные детали из TMDB
-    this.tmdbService.getFullDetails(media.id, media.media_type).subscribe({
-      next: (details) => {
-        this.fullMediaDetails = details;
-        this.isLoadingDetails = false;
-      },
-      error: () => {
-        this.isLoadingDetails = false;
-        this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось загрузить детали фильма' });
-      }
-    });
-
-    // Б) Запрашиваем раздачи из Jackett по imdb_id
-    this.searchJackettByImdbId(media);
-  }
-
-  // 2. Пользователь нажал "Назад"
   onGoBack() {
     this.viewState = 'search';
     this.selectedMedia = null;
     this.fullMediaDetails = null;
     this.results = [];
-    // 🔥 НЕ очищаем savedTmdbResults — они останутся для TmdbSearchComponent
+    this.cdr.markForCheck();
   }
 
-  // 🔥 Новое событие: TmdbSearchComponent сообщает о результатах поиска
-  onTmdbSearchCompleted(event: { results: TmdbSearchResult[], query: string, hasSearched: boolean }) {
-    this.savedTmdbResults = event.results;
-    this.savedTmdbQuery = event.query;
-    this.savedTmdbHasSearched = event.hasSearched;
-  }
-
-  // 2. Новый метод: получаем imdb_id из TMDB, затем ищем в Jackett
-  private searchJackettByImdbId(media: TmdbSearchResult) {
-    this.searchLoading = true;
-    this.results = [];
-
-    // Запрашиваем внешние ID у TMDB
-    this.tmdbService.getExternalIds(media.id, media.media_type).subscribe({
-      next: (externalIds) => {
-        let searchQuery = '';
-
-        // Если у фильма есть imdb_id, используем его (это идеальный вариант)
-        if (externalIds.imdb_id) {
-          searchQuery = externalIds.imdb_id; 
-        } else {
-          // Fallback: если imdb_id вдруг нет (редко, но бывает), ищем по Названию + Году
-          const title = this.tmdbService.getTitle(media);
-          const year = this.tmdbService.getYear(media.media_type === 'movie' ? media.release_date : media.first_air_date);
-          searchQuery = year ? `${title} ${year}` : title;
-          console.log(`⚠️ imdb_id не найден, используем fallback запрос: "${searchQuery}"`);
-        }
-
-        this.searchQuery = searchQuery; // Обновляем поле, чтобы пользователь видел, по чему ищем
-
-        // Ищем в Jackett
-        this.jackettService.search(searchQuery).pipe(
-          finalize(() => this.searchLoading = false)
-        ).subscribe({
-          next: (res) => {
-            this.results = res.Results || [];
-            if (this.results.length === 0) {
-              this.messageService.add({ 
-                severity: 'warn', 
-                summary: 'Внимание', 
-                detail: `Раздачи по запросу "${searchQuery}" не найдены. Попробуйте прямой поиск.` 
-              });
-            }
-          },
-          error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось выполнить поиск в Jackett' })
-        });
-      },
-      error: (err) => {
-        console.error('Ошибка получения external_ids:', err);
-        this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось получить данные о фильме' });
-        this.searchLoading = false;
-      }
-    });
-  }
-
-  // 3. Пользователь нажал "Прямой поиск"
   onRequestDirectSearch() {
     this.viewState = 'search';
     this.showDirectSearch = true;
@@ -167,70 +89,125 @@ export class SearchComponent {
     this.fullMediaDetails = null;
     this.searchQuery = '';
     this.results = [];
+    this.cdr.markForCheck();
   }
 
-  // 4. Прямой поиск (твоя старая логика)
+  // ─── TMDB ────────────────────────────────────────────────
+
+  onTmdbSearchCompleted(event: { results: TmdbSearchResult[], query: string, hasSearched: boolean }) {
+    this.savedTmdbResults = event.results;
+    this.savedTmdbQuery = event.query;
+    this.savedTmdbHasSearched = event.hasSearched;
+    this.cdr.markForCheck();
+  }
+
+  // ─── Jackett: поиск ──────────────────────────────────────
+
+  private fetchMediaDetailsAndSearchJackett(media: TmdbSearchResult) {
+    this.tmdbService.getFullDetails(media.id, media.media_type).subscribe({
+      next: (details) => {
+        this.fullMediaDetails = details;
+        this.isLoadingDetails = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.isLoadingDetails = false;
+        this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось загрузить детали фильма' });
+        this.cdr.markForCheck();
+      }
+    });
+
+    this.searchJackettByImdbId(media);
+  }
+
+  private searchJackettByImdbId(media: TmdbSearchResult) {
+    this.searchLoading = true;
+    this.results = [];
+    this.cdr.markForCheck();
+
+    this.tmdbService.getExternalIds(media.id, media.media_type).subscribe({
+      next: (externalIds) => {
+        let query = '';
+
+        if (externalIds.imdb_id) {
+          query = externalIds.imdb_id;
+        } else {
+          const title = this.tmdbService.getTitle(media);
+          const year = this.tmdbService.getYear(
+            media.media_type === 'movie' ? media.release_date : media.first_air_date
+          );
+          query = year ? `${title} ${year}` : title;
+          console.log(`⚠️ imdb_id не найден, используем fallback: "${query}"`);
+        }
+
+        this.searchQuery = query;
+        this.cdr.markForCheck();
+        this.executeJackettSearch(query);
+      },
+      error: (err) => {
+        console.error('Ошибка получения external_ids:', err);
+        this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось получить данные о фильме' });
+        this.searchLoading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
   search() {
     if (!this.searchQuery.trim()) return;
     this.searchLoading = true;
-    
-    this.jackettService.search(this.searchQuery).pipe(
-      finalize(() => this.searchLoading = false)
+    this.cdr.markForCheck();
+    this.executeJackettSearch(this.searchQuery, true);
+  }
+
+  private executeJackettSearch(query: string, isDirectSearch = false) {
+    this.jackettService.search(query).pipe(
+      finalize(() => {
+        this.searchLoading = false;
+        this.cdr.markForCheck();
+      })
     ).subscribe({
       next: (res) => {
         this.results = res.Results || [];
         if (this.results.length === 0) {
-          this.messageService.add({ severity: 'info', summary: 'Информация', detail: 'Ничего не найдено' });
+          this.messageService.add({
+            severity: isDirectSearch ? 'info' : 'warn',
+            summary: isDirectSearch ? 'Информация' : 'Внимание',
+            detail: isDirectSearch
+              ? 'Ничего не найдено'
+              : `Раздачи по запросу "${query}" не найдены. Попробуйте прямой поиск.`
+          });
         }
+        this.cdr.markForCheck();
       },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось выполнить поиск' })
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось выполнить поиск в Jackett' });
+        this.cdr.markForCheck();
+      }
     });
+  }
+
+  onSearchQueryChange(value: string) {
+    this.searchQuery = value;
+    this.cdr.markForCheck();
   }
 
   clearDirectSearch(): void {
     this.searchQuery = '';
     this.results = [];
+    this.cdr.markForCheck();
   }
 
-  // --- Все твои существующие методы (без изменений) ---
-
-  isSeries(title: string): boolean {
-    const lowerTitle = title.toLowerCase();
-    return /s\d{1,2}(e\d{1,2})?|сезон|серия|season|episode|\d{1,2}[хx]\d{1,2}/i.test(lowerTitle);
-  }
-
-  getDisplayTitle(result: JackettResult): string {
-    if (result.Description && result.Description !== result.Title) {
-      return result.Description;
-    }
-    return result.Title || 'Без названия';
-  }
-
-  getCategory(title: string): string {
-    return this.isSeries(title) ? 'series' : 'movies';
-  }
-
-  formatSize(bytes: number): string {
-    if (bytes === 0) return '0 B';
-    const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
-  hasMagnet(result: JackettResult): boolean {
-    return !!result.MagnetUri && result.MagnetUri.startsWith('magnet:');
-  }
-
-  hasTorrentFile(result: JackettResult): boolean {
-    return !!result.Link && !result.Link.startsWith('magnet:');
-  }
+  // ─── qBittorrent ─────────────────────────────────────────
 
   addTorrent(result: JackettResult) {
-    const displayName = this.getDisplayTitle(result);
-    const isSeries = this.isSeries(displayName);
-    const category = this.getCategory(displayName);
-    
+    const displayName = result.Description && result.Description !== result.Title
+      ? result.Description
+      : result.Title || 'Без названия';
+
+    const isSeries = /s\d{1,2}(e\d{1,2})?|сезон|серия|season|episode|\d{1,2}[хx]\d{1,2}/i.test(displayName.toLowerCase());
+    const category = isSeries ? 'series' : 'movies';
+
     let torrentUrl = result.MagnetUri;
 
     if (result.Link && !result.Link.startsWith('magnet:')) {
@@ -239,16 +216,16 @@ export class SearchComponent {
 
     this.qbService.addTorrent(torrentUrl, isSeries, category).subscribe({
       next: () => {
-        this.messageService.add({ 
-          severity: 'success', 
-          summary: 'Успех', 
-          detail: `"${displayName}" добавлен (${isSeries ? 'на паузу' : 'в загрузку'})` 
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Успех',
+          detail: `"${displayName}" добавлен (${isSeries ? 'на паузу' : 'в загрузку'})`
         });
         this.torrentAdded.emit();
       },
       error: (err) => {
         console.error('❌ Ошибка добавления:', err);
-        
+
         if (result.MagnetUri && torrentUrl !== result.MagnetUri) {
           this.qbService.addTorrent(result.MagnetUri, isSeries, category).subscribe({
             next: () => {
@@ -264,9 +241,5 @@ export class SearchComponent {
         }
       }
     });
-  }
-  
-  onImageError(event: any) {
-    event.target.style.display = 'none';
   }
 }

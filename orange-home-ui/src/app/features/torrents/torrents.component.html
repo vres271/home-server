@@ -1,5 +1,7 @@
 <div class="card">
-  <p-tabView [(activeIndex)]="activeTabIndex">
+  <p-tabView 
+    [activeIndex]="activeTabIndex" 
+    (activeIndexChange)="onActiveIndexChange($event)">
     <p-tabPanel header="Загрузки">
       <app-torrent-downloads></app-torrent-downloads>
     </p-tabPanel>

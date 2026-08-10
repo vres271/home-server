@@ -5,13 +5,13 @@
     <input 
       pInputText 
       type="text" 
-      [(ngModel)]="searchQuery" 
+      [ngModel]="searchQuery"
+      (ngModelChange)="onSearchQueryChange($event)"
       placeholder="Название фильма или сериала..." 
       class="w-full"
       (keydown.enter)="search()"
     />
     
-    <!-- Крестик появляется только если есть текст -->
     @if (searchQuery) {
       <p-inputIcon styleClass="cursor-pointer" (click)="clearSearch()">
         <i class="pi pi-times"></i>
@@ -65,7 +65,7 @@
   </div>
 }
 
-<!-- Кнопка прямого поиска (если ничего не найдено или пользователь хочет искать по имени раздачи) -->
+<!-- Кнопка прямого поиска -->
 @if (hasSearched && (results.length === 0 || !isLoading)) {
   <div class="text-center mt-4">
     <p class="text-500 mb-3">Не нашли то, что искали, или ищете конкретную раздачу?</p>

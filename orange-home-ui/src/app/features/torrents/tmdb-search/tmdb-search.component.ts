@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, SimpleChanges, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -12,6 +12,7 @@ import { TmdbSearchResult } from '../../../core/models/tmdb.model';
 @Component({
   selector: 'app-tmdb-search',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, FormsModule, InputTextModule, ButtonModule, IconFieldModule, InputIconModule],
   templateUrl: './tmdb-search.component.html',
   styleUrls: ['./tmdb-search.component.css']
@@ -19,6 +20,7 @@ import { TmdbSearchResult } from '../../../core/models/tmdb.model';
 export class TmdbSearchComponent {
   private tmdbService = inject(TmdbService);
   private messageService = inject(MessageService);
+  private cdr = inject(ChangeDetectorRef);
 
   @Output() mediaSelected = new EventEmitter<TmdbSearchResult>();
   @Output() requestDirectSearch = new EventEmitter<void>();
@@ -38,56 +40,64 @@ export class TmdbSearchComponent {
       this.results = this.savedResults;
       this.searchQuery = this.savedQuery;
       this.hasSearched = this.savedHasSearched;
+      this.cdr.markForCheck();
     }
   }
 
-  search() {
+  onSearchQueryChange(value: string): void {
+    this.searchQuery = value;
+    this.cdr.markForCheck();
+  }
+
+  search(): void {
     if (!this.searchQuery.trim()) return;
     this.isLoading = true;
     this.hasSearched = true;
     this.results = [];
+    this.cdr.markForCheck();
 
     this.tmdbService.searchMulti(this.searchQuery).subscribe({
       next: (response) => {
         this.results = response.results || [];
         this.isLoading = false;
-        
-        // 🔥 Сообщаем родителю о результатах
+
         this.searchCompleted.emit({
           results: this.results,
           query: this.searchQuery,
           hasSearched: this.hasSearched
         });
-        
+
         if (this.results.length === 0) {
-          this.messageService.add({ 
-            severity: 'warn', 
-            summary: 'Внимание', 
-            detail: 'По вашему запросу в TMDB ничего не найдено. Попробуйте прямой поиск.' 
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Внимание',
+            detail: 'По вашему запросу в TMDB ничего не найдено. Попробуйте прямой поиск.'
           });
         }
+        this.cdr.markForCheck();
       },
       error: () => {
         this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось получить данные из TMDB' });
         this.isLoading = false;
+        this.cdr.markForCheck();
       }
     });
   }
- 
+
   clearSearch(): void {
     this.searchQuery = '';
     this.results = [];
     this.hasSearched = false;
-    
-    // Сообщаем родителю, что поиск сброшен
-    this.searchCompleted.emit({ 
-      results: [], 
-      query: '', 
-      hasSearched: false 
+    this.cdr.markForCheck();
+
+    this.searchCompleted.emit({
+      results: [],
+      query: '',
+      hasSearched: false
     });
   }
 
-  onSelect(item: TmdbSearchResult) {
+  onSelect(item: TmdbSearchResult): void {
     this.mediaSelected.emit(item);
   }
 

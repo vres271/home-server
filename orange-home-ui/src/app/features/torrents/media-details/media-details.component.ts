@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, inject } from '@angular/core';
+import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
@@ -8,6 +8,7 @@ import { TmdbService } from '../../../core/services/tmdb.service';
 @Component({
   selector: 'app-media-details',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [CommonModule, ButtonModule, TagModule],
   templateUrl: './media-details.component.html',
   styleUrls: ['./media-details.component.css']
@@ -16,8 +17,8 @@ export class MediaDetailsComponent {
   @Input() media!: TmdbSearchResult;
   @Input() fullDetails: any = null;
   @Input() isLoadingDetails = false;
-  
-  @Output() goBack = new EventEmitter<void>(); // Событие для кнопки "Назад"
+
+  @Output() goBack = new EventEmitter<void>();
 
   public tmdb = inject(TmdbService);
 
@@ -40,8 +41,6 @@ export class MediaDetailsComponent {
 
   getTopCast(): any[] {
     if (!this.fullDetails?.credits?.cast) return [];
-    return this.fullDetails.credits.cast.slice(0, 6); // Топ-6 актеров
+    return this.fullDetails.credits.cast.slice(0, 6);
   }
-
-
 }

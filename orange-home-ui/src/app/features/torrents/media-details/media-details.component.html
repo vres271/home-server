@@ -65,7 +65,7 @@
           <h3 class="text-xl font-semibold mb-3">В главных ролях</h3>
           <div class="cast-list flex gap-3 overflow-x-auto pb-2">
             @for (actor of getTopCast(); track actor.id) {
-              <div class="cast-item flex flex-column align-items-center text-center" style="min-width: 80px;">
+              <div class="cast-item flex flex-column align-items-center text-center">
                 @if (actor.profile_path) {
                   <img [src]="tmdb.getPosterUrl(actor.profile_path)" class="cast-photo border-round mb-2" alt="actor" />
                 } @else {

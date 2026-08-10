@@ -33,16 +33,13 @@
   </div>
   
   <div class="flex justify-content-between align-items-center mb-2 text-sm text-500">
-    <!-- Левая часть: Размер и категория -->
     <span>{{ formatSize(torrent.size) }} • {{ torrent.category || 'Без категории' }}</span>
     
-    <!-- Правая часть: ETA (только если загрузка не завершена) -->
     <span *ngIf="torrent.progress < 1" class="inline-flex align-items-center gap-1">
       <i class="pi pi-clock" style="font-size: 0.875rem; vertical-align: middle;"></i>
       {{ formatEta(torrent.eta) }}
     </span>
     
-    <!-- Правая часть: Если загрузка завершена -->
     <span *ngIf="torrent.progress === 1" title="Завершено" class="text-green-600 inline-flex align-items-center gap-1 font-medium">
       <i class="pi pi-check-circle" style="font-size: 0.875rem; vertical-align: middle;"></i>
     </span>
@@ -64,7 +61,7 @@
       <p-button 
         *ngIf="['downloading', 'forcedDL', 'metaDL', 'stalledDL', 'uploading', 'forcedUP', 'stalledUP'].includes(torrent.state)"
         icon="pi pi-pause" 
-        severity="warn" 
+        [severity]="'warn'" 
         [size]="'small'" 
         (onClick)="pauseTorrent(torrent.hash)"
         pTooltip="Пауза">
@@ -92,7 +89,7 @@
 
 <app-torrent-details 
   *ngIf="selectedTorrent"
-  [(visible)]="showDetailsDialog"
+  [visible]="showDetailsDialog"
   [torrentInfo]="selectedTorrent"
   (visibleChange)="onDialogHide()" 
   (onTorrentUpdated)="loadTorrents()">

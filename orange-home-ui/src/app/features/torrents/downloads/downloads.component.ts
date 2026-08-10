@@ -1,8 +1,9 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { ToastModule } from 'primeng/toast';
 import { ProgressBarModule } from 'primeng/progressbar';
+import { TooltipModule } from 'primeng/tooltip';
 import { MessageService } from 'primeng/api';
 import { finalize, tap, concatMap, map } from 'rxjs/operators';
 import { interval, Subject, Observable } from 'rxjs';
@@ -15,7 +16,11 @@ import { TorrentDetailsComponent } from '../torrent-details/torrent-details.comp
 @Component({
   selector: 'app-torrent-downloads',
   standalone: true,
-  imports: [CommonModule, ButtonModule, ToastModule, ProgressBarModule, TorrentDetailsComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [
+    CommonModule, ButtonModule, ToastModule, ProgressBarModule, 
+    TooltipModule, TorrentDetailsComponent
+  ],
   providers: [MessageService],
   templateUrl: './downloads.component.html',
   styleUrls: ['./downloads.component.css']
@@ -23,6 +28,7 @@ import { TorrentDetailsComponent } from '../torrent-details/torrent-details.comp
 export class DownloadsComponent implements OnInit, OnDestroy {
   private qbService = inject(QBittorrentService);
   private messageService = inject(MessageService);
+  private cdr = inject(ChangeDetectorRef);
 
   activeTorrents: TorrentInfo[] = [];
   downloadsLoading = false;
@@ -30,16 +36,16 @@ export class DownloadsComponent implements OnInit, OnDestroy {
 
   showDetailsDialog = false;
   selectedTorrent: TorrentInfo | null = null;
-  
+
   private destroy$ = new Subject<void>();
   private readonly refreshInterval = 5000;
-  private readonly freeSpaceInterval = 30000; // <-- 30 секунд для диска
+  private readonly freeSpaceInterval = 30000;
 
   ngOnInit() {
     this.loadTorrents();
-    this.loadFreeSpace();               // 1. Загружаем сразу при старте
-    this.startAutoUpdate();             // 2. Таймер торрентов (5 сек)
-    this.startFreeSpaceAutoUpdate();    // 3. Таймер диска (30 сек)
+    this.loadFreeSpace();
+    this.startAutoUpdate();
+    this.startFreeSpaceAutoUpdate();
   }
 
   ngOnDestroy() {
@@ -49,12 +55,8 @@ export class DownloadsComponent implements OnInit, OnDestroy {
 
   private fetchAndSortTorrents(): Observable<TorrentInfo[]> {
     return this.qbService.getTorrents().pipe(
-      map(torrents => 
-        [...torrents].sort((a, b) => {
-          const timeA = a.added_on || 0;
-          const timeB = b.added_on || 0;
-          return timeB - timeA;
-        })
+      map(torrents =>
+        [...torrents].sort((a, b) => (b.added_on || 0) - (a.added_on || 0))
       )
     );
   }
@@ -64,7 +66,10 @@ export class DownloadsComponent implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => {
         this.fetchAndSortTorrents().subscribe({
-          next: (torrents) => { this.activeTorrents = torrents; },
+          next: (torrents) => {
+            this.activeTorrents = torrents;
+            this.cdr.markForCheck();   // 🔥 interval вне событий DOM
+          },
           error: () => {}
         });
       });
@@ -72,8 +77,11 @@ export class DownloadsComponent implements OnInit, OnDestroy {
 
   private loadFreeSpace() {
     this.qbService.getFreeSpace().subscribe({
-      next: (size) => { this.freeSpace = size || 0; },
-      error: () => {} // Тихо игнорируем
+      next: (size) => {
+        this.freeSpace = size || 0;
+        this.cdr.markForCheck();       // 🔥 interval вне событий DOM
+      },
+      error: () => {}
     });
   }
 
@@ -85,15 +93,26 @@ export class DownloadsComponent implements OnInit, OnDestroy {
 
   private refreshList(): Observable<TorrentInfo[]> {
     this.downloadsLoading = true;
+    this.cdr.markForCheck();           // 🔥 показать спиннер сразу
+
     return this.fetchAndSortTorrents().pipe(
-      finalize(() => this.downloadsLoading = false)
+      finalize(() => {
+        this.downloadsLoading = false;
+        this.cdr.markForCheck();       // 🔥 скрыть спиннер
+      })
     );
   }
 
   loadTorrents() {
     this.refreshList().subscribe({
-      next: (torrents) => { this.activeTorrents = torrents; },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось получить список' })
+      next: (torrents) => {
+        this.activeTorrents = torrents;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось получить список' });
+        this.cdr.markForCheck();
+      }
     });
     this.loadFreeSpace();
   }
@@ -103,8 +122,14 @@ export class DownloadsComponent implements OnInit, OnDestroy {
       tap(() => this.messageService.add({ severity: 'warn', summary: 'Пауза', detail: 'Загрузка приостановлена' })),
       concatMap(() => this.refreshList())
     ).subscribe({
-      next: (torrents) => { this.activeTorrents = torrents; },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' })
+      next: (torrents) => {
+        this.activeTorrents = torrents;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' });
+        this.cdr.markForCheck();
+      }
     });
   }
 
@@ -113,8 +138,14 @@ export class DownloadsComponent implements OnInit, OnDestroy {
       tap(() => this.messageService.add({ severity: 'success', summary: 'Возобновлено', detail: 'Загрузка возобновлена' })),
       concatMap(() => this.refreshList())
     ).subscribe({
-      next: (torrents) => { this.activeTorrents = torrents; },
-      error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' })
+      next: (torrents) => {
+        this.activeTorrents = torrents;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' });
+        this.cdr.markForCheck();
+      }
     });
   }
 
@@ -122,14 +153,39 @@ export class DownloadsComponent implements OnInit, OnDestroy {
     if (confirm(`Удалить "${name}"?\n\nФайлы на диске также будут удалены.`)) {
       this.qbService.deleteTorrent(hash, true).pipe(
         tap(() => this.messageService.add({ severity: 'info', summary: 'Удалено', detail: 'Торрент и файлы удалены' })),
-        concatMap(() => this.refreshList()), // Сначала обновляем список
-        tap(() => this.loadFreeSpace())      // И сразу обновляем свободное место
+        concatMap(() => this.refreshList()),
+        tap(() => this.loadFreeSpace())
       ).subscribe({
-        next: (torrents) => { this.activeTorrents = torrents; },
-        error: () => this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' })
+        next: (torrents) => {
+          this.activeTorrents = torrents;
+          this.cdr.markForCheck();
+        },
+        error: () => {
+          this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось обновить список' });
+          this.cdr.markForCheck();
+        }
       });
     }
   }
+
+  openTorrentDetails(torrent: TorrentInfo) {
+    this.selectedTorrent = torrent;
+    this.showDetailsDialog = true;
+    this.cdr.markForCheck();
+  }
+
+  onTorrentUpdated() {
+    this.loadTorrents();
+    // markForCheck() вызывается внутри loadTorrents
+  }
+
+  onDialogHide() {
+    this.showDetailsDialog = false;
+    this.selectedTorrent = null;
+    this.cdr.markForCheck();           // 🔥 не DOM event — нужен markForCheck
+  }
+
+  // ─── Форматирование ──────────────────────────────────────
 
   formatSize(bytes: number): string {
     if (bytes === 0) return '0 B';
@@ -148,11 +204,9 @@ export class DownloadsComponent implements OnInit, OnDestroy {
   }
 
   formatEta(seconds: number): string {
-    // 8640000 или -1 в qBittorrent означает "неизвестно" или "бесконечно" (например, при сидировании)
     if (seconds < 0 || seconds >= 8640000) {
       return '∞';
     }
-    
     const days = Math.floor(seconds / 86400);
     const hours = Math.floor((seconds % 86400) / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -160,17 +214,6 @@ export class DownloadsComponent implements OnInit, OnDestroy {
     if (days > 0) return `${days}д ${hours}ч`;
     if (hours > 0) return `${hours}ч ${minutes}м`;
     return `${minutes}м`;
-  }
-
-  // Добавь метод:
-  openTorrentDetails(torrent: TorrentInfo) {
-    this.selectedTorrent = torrent;
-    this.showDetailsDialog = true;
-  }
-
-  // После успешного действия (пауза/возобновление/удаление) обнови список:
-  onTorrentUpdated() {
-    this.loadTorrents();
   }
 
   getStateLabel(state: string): string {
@@ -184,10 +227,4 @@ export class DownloadsComponent implements OnInit, OnDestroy {
     };
     return labels[state] || `❓ ${state}`;
   }
-
-  onDialogHide() {
-    this.showDetailsDialog = false;
-    this.selectedTorrent = null;
-  }
-
 }

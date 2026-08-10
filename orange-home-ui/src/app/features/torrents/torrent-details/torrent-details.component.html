@@ -1,12 +1,12 @@
 <p-toast position="bottom-right"></p-toast>
 
 <p-dialog 
-  [(visible)]="visible" 
+  [visible]="dialogVisible" 
   [modal]="true" 
   [style]="{width: '90vw', maxWidth: '800px', maxHeight: '90vh'}"
   [draggable]="false"
   [resizable]="false"
-  (onHide)="closeDialog()">
+  (visibleChange)="onVisibleChange($event)">
   
   <ng-template pTemplate="header">
     <div class="flex align-items-center gap-2">
@@ -17,7 +17,6 @@
     </div>
   </ng-template>
 
-  <!-- Обёртка для flex-раскладки -->
   <div class="flex flex-column" style="height: 100%;">
     
     <p-progressBar 
@@ -27,29 +26,13 @@
       [style]="{'height': '6px', 'border-radius': '3px'}">
     </p-progressBar>
 
-    <!-- Общая информация о торренте -->
     <div class="surface-100 p-3 border-round mb-3 flex-shrink-0">
       <div class="flex flex-wrap gap-3 text-sm">
-        <span>
-          <i class="pi pi-database mr-1"></i>
-          {{ formatSize(torrentInfo.size) }}
-        </span>
-        <span>
-          <i class="pi pi-chart-line mr-1"></i>
-          {{ (torrentInfo.progress * 100).toFixed(1) }}%
-        </span>
-        <span>
-          <i class="pi pi-download mr-1"></i>
-          {{ formatSize(torrentInfo.dlspeed) }}/s
-        </span>
-        <span>
-          <i class="pi pi-upload mr-1"></i>
-          {{ formatSize(torrentInfo.upspeed) }}/s
-        </span>
-        <span>
-          <i class="pi pi-users mr-1"></i>
-          {{ torrentInfo.num_seeds }} сидов / {{ torrentInfo.num_leechs }} пиров
-        </span>
+        <span><i class="pi pi-database mr-1"></i> {{ formatSize(torrentInfo.size) }}</span>
+        <span><i class="pi pi-chart-line mr-1"></i> {{ (torrentInfo.progress * 100).toFixed(1) }}%</span>
+        <span><i class="pi pi-download mr-1"></i> {{ formatSize(torrentInfo.dlspeed) }}/s</span>
+        <span><i class="pi pi-upload mr-1"></i> {{ formatSize(torrentInfo.upspeed) }}/s</span>
+        <span><i class="pi pi-users mr-1"></i> {{ torrentInfo.num_seeds }} сидов / {{ torrentInfo.num_leechs }} пиров</span>
       </div>
     </div>
 
@@ -61,7 +44,7 @@
       </div>
     </div>
 
-    <!-- Для фильмов (1 файл) -->
+    <!-- Фильм (1 файл) -->
     <div *ngIf="!loading && isSingleFile" class="text-center p-4 flex-1 flex align-items-center justify-content-center">
       <div>
         <i class="pi pi-file text-4xl text-500 mb-2"></i>
@@ -70,73 +53,42 @@
       </div>
     </div>
 
-    <!-- Для сериалов (много файлов) -->
+    <!-- Сериал (много файлов) -->
     <div *ngIf="!loading && !isSingleFile" class="flex flex-column flex-1" style="min-height: 0;">
       
-      <!-- Кнопки управления -->
       <div class="flex flex-column gap-2 mb-3 flex-shrink-0">
         <div class="flex flex-wrap gap-2">
           <p-button 
             [pTooltip]="allSelected ? 'Снять выделение' : 'Выделить всё'"
             tooltipPosition="top"
-            [icon]="allSelected ? 'pi pi-minus' : 'pi-check'"
+            [icon]="allSelected ? 'pi pi-minus' : 'pi pi-check'"
             size="small"
             severity="secondary"
             (onClick)="toggleSelectAll()">
           </p-button>
 
-          <p-button 
-            pTooltip="Не скачивать"
-            icon="pi pi-ban"
-            size="small"
-            severity="danger"
-            [disabled]="selectedFiles.size === 0"
-            (onClick)="setPriorityForSelected(0)">
+          <p-button pTooltip="Не скачивать" icon="pi pi-ban" size="small" severity="danger"
+            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(0)">
           </p-button>
           
-          <p-button 
-            pTooltip="Обычный"
-            tooltipPosition="top"
-            icon="pi pi-circle"
-            size="small"
-            severity="secondary"
-            [disabled]="selectedFiles.size === 0"
-            (onClick)="setPriorityForSelected(1)">
+          <p-button pTooltip="Обычный" tooltipPosition="top" icon="pi pi-circle" size="small" severity="secondary"
+            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(1)">
           </p-button>
           
-          <p-button 
-            pTooltip="Высокий"
-            tooltipPosition="top"
-            icon="pi pi-arrow-up"
-            size="small"
-            severity="warn"
-            [disabled]="selectedFiles.size === 0"
-            (onClick)="setPriorityForSelected(6)">
+          <p-button pTooltip="Высокий" tooltipPosition="top" icon="pi pi-arrow-up" size="small" severity="warn"
+            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(6)">
           </p-button>
           
-          <p-button 
-            pTooltip="Максимум"
-            tooltipPosition="top"
-            icon="pi pi-arrow-up"
-            size="small"
-            severity="success"
-            [disabled]="selectedFiles.size === 0"
-            (onClick)="setPriorityForSelected(7)">
+          <p-button pTooltip="Максимум" tooltipPosition="top" icon="pi pi-arrow-up" size="small" severity="success"
+            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(7)">
           </p-button>
           
-          <p-button 
-            pTooltip="Каскадный"
-            tooltipPosition="top"
-            icon="pi pi-sort-amount-down"
-            size="small"
-            severity="info"
-            [disabled]="selectedFiles.size === 0"
-            (onClick)="applyCascadePriority()">
+          <p-button pTooltip="Каскадный" tooltipPosition="top" icon="pi pi-sort-amount-down" size="small" severity="info"
+            [disabled]="selectedFiles.size === 0" (onClick)="applyCascadePriority()">
           </p-button>
         </div>
       </div>
 
-      <!-- Список файлов - занимает оставшееся пространство -->
       <div class="file-list border-1 surface-border border-round flex-1" style="overflow-y: auto; min-height: 0;">
         <div *ngFor="let file of files" 
              class="border-bottom-1 surface-border hover:surface-100 cursor-pointer transition-colors"
@@ -180,18 +132,10 @@
 
         </div>
       </div>
-
     </div>
-
   </div>
 
-  <!-- Футер -->
   <ng-template pTemplate="footer">
-    <p-button 
-      label="Закрыть" 
-      icon="pi pi-times" 
-      severity="secondary"
-      (onClick)="closeDialog()">
-    </p-button>
+    <p-button label="Закрыть" icon="pi pi-times" severity="secondary" (onClick)="closeDialog()"></p-button>
   </ng-template>
 </p-dialog>

@@ -1,4 +1,4 @@
-import { Component, inject, Input, Output, EventEmitter, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, Input, Output, EventEmitter, OnInit, OnDestroy, ChangeDetectionStrategy, ChangeDetectorRef, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DialogModule } from 'primeng/dialog';
 import { ButtonModule } from 'primeng/button';
@@ -7,16 +7,17 @@ import { ProgressBarModule } from 'primeng/progressbar';
 import { TooltipModule } from 'primeng/tooltip';
 import { ToastModule } from 'primeng/toast';
 import { MessageService } from 'primeng/api';
-import { interval, Subject } from 'rxjs';
+import { interval, Subject, forkJoin } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { FormsModule } from '@angular/forms';
 
 import { QBittorrentService } from '../../../core/services/qbittorrent.service';
 import { TorrentFile, TorrentInfo } from '../../../core/models/qbittorrent.model';
-import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-torrent-details',
   standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule, DialogModule, ButtonModule, CheckboxModule,
     ProgressBarModule, TooltipModule, ToastModule, FormsModule
@@ -28,11 +29,14 @@ import { FormsModule } from '@angular/forms';
 export class TorrentDetailsComponent implements OnInit, OnDestroy {
   private qbService = inject(QBittorrentService);
   private messageService = inject(MessageService);
+  private cdr = inject(ChangeDetectorRef);
 
   @Input() visible = false;
   @Input() torrentInfo!: TorrentInfo;
   @Output() visibleChange = new EventEmitter<boolean>();
   @Output() onTorrentUpdated = new EventEmitter<void>();
+
+  dialogVisible = false;
 
   files: TorrentFile[] = [];
   selectedFiles = new Set<number>();
@@ -40,15 +44,12 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private refreshInterval = 5000;
 
-  // Кэшированные общие части имён файлов
   private commonPrefix = '';
   private commonSuffix = '';
 
   ngOnInit() {
-    // При первом открытии показываем спиннер
+    this.dialogVisible = this.visible;
     this.loadFiles(false);
-    
-    // Дальнейшие обновления каждые 5 секунд происходят "тихо", без мигания
     interval(this.refreshInterval)
       .pipe(takeUntil(this.destroy$))
       .subscribe(() => this.loadFiles(true));
@@ -59,6 +60,13 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['visible']) {
+      this.dialogVisible = this.visible;
+      this.cdr.markForCheck();
+    }
+  }
+
   get isSingleFile(): boolean {
     return this.files.length === 1;
   }
@@ -67,44 +75,44 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
     return this.files.length > 0 && this.selectedFiles.size === this.files.length;
   }
 
-  /**
-   * Загрузка файлов. 
-   * @param silent если true, не показывает спиннер загрузки (для фоновых обновлений)
-   */
   loadFiles(silent: boolean = false) {
     if (!silent) this.loading = true;
-    
+
     this.qbService.getTorrentFiles(this.torrentInfo.hash).subscribe({
       next: (files) => {
         this.files = files;
         this.computeCommonParts();
         this.loading = false;
+        this.cdr.markForCheck();
       },
       error: () => {
         this.loading = false;
+        this.cdr.markForCheck();
       }
     });
   }
 
   toggleSelectAll() {
     if (this.allSelected) {
-      this.selectedFiles.clear();
+      this.selectedFiles = new Set();
     } else {
       this.selectedFiles = new Set(this.files.map(f => f.index));
     }
+    this.cdr.markForCheck();
   }
 
   toggleFile(index: number) {
-    if (this.selectedFiles.has(index)) {
-      this.selectedFiles.delete(index);
+    // Иммутабельное обновление Set — Angular увидит новую ссылку
+    const newSet = new Set(this.selectedFiles);
+    if (newSet.has(index)) {
+      newSet.delete(index);
     } else {
-      this.selectedFiles.add(index);
+      newSet.add(index);
     }
+    this.selectedFiles = newSet;
+    this.cdr.markForCheck();
   }
 
-  /**
-   * Установить приоритет для выбранных файлов
-   */
   setPriorityForSelected(priority: number) {
     if (this.selectedFiles.size === 0) {
       this.messageService.add({
@@ -136,9 +144,6 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
     });
   }
 
-  /**
-   * Каскадный приоритет: 1-й выбранный → Макс, 2-й → Высокий, остальные → Обычный
-   */
   applyCascadePriority() {
     if (this.selectedFiles.size === 0) {
       this.messageService.add({
@@ -150,48 +155,34 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
     }
 
     const sortedIds = Array.from(this.selectedFiles).sort((a, b) => a - b);
-    const requests: any[] = [];
-
-    sortedIds.forEach((fileId, index) => {
+    const requests = sortedIds.map((fileId, index) => {
       let priority: number;
-      if (index === 0) {
-        priority = 7; // Maximum
-      } else if (index === 1) {
-        priority = 6; // High
-      } else {
-        priority = 1; // Normal
-      }
-      requests.push(
-        this.qbService.setFilePriority(this.torrentInfo.hash, [fileId], priority)
-      );
+      if (index === 0) priority = 7;
+      else if (index === 1) priority = 6;
+      else priority = 1;
+      return this.qbService.setFilePriority(this.torrentInfo.hash, [fileId], priority);
     });
 
-    // Выполняем все запросы параллельно
-    import('rxjs').then(({ forkJoin }) => {
-      forkJoin(requests).subscribe({
-        next: () => {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Успех',
-            detail: `Каскадный приоритет установлен для ${sortedIds.length} файл(ов)`
-          });
-          this.loadFiles();
-          this.onTorrentUpdated.emit();
-        },
-        error: () => {
-          this.messageService.add({
-            severity: 'error',
-            summary: 'Ошибка',
-            detail: 'Не удалось установить каскадный приоритет'
-          });
-        }
-      });
+    forkJoin(requests).subscribe({
+      next: () => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Успех',
+          detail: `Каскадный приоритет установлен для ${sortedIds.length} файл(ов)`
+        });
+        this.loadFiles();
+        this.onTorrentUpdated.emit();
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Ошибка',
+          detail: 'Не удалось установить каскадный приоритет'
+        });
+      }
     });
   }
 
-  /**
-   * Запустить все файлы (приоритет 1)
-   */
   startAll() {
     const allFileIds = this.files.map(f => f.index);
     this.qbService.setFilePriority(this.torrentInfo.hash, allFileIds, 1).subscribe({
@@ -214,8 +205,16 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
     });
   }
 
+  onVisibleChange(newValue: boolean) {
+    if (!newValue) {
+      this.closeDialog();
+    }
+  }
+
   closeDialog() {
+    this.dialogVisible = false;
     this.visibleChange.emit(false);
+    this.cdr.markForCheck();
   }
 
   formatSize(bytes: number): string {
@@ -253,28 +252,16 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
     return 'pi pi-clock text-500';
   }
 
-  /**
-   * Находит общий префикс и суффикс всех имён файлов.
-   * Например, для:
-   *   "Series/S01E01.1080p.mkv"
-   *   "Series/S01E02.1080p.mkv"
-   *   "Series/S01E03.1080p.mkv"
-   * Префикс: "Series/S01E0", Суффикс: ".1080p.mkv"
-   */
-  /**
-   * Находит общий префикс и суффикс всех имён файлов
-   */
   private computeCommonParts() {
     if (this.files.length <= 1) {
       this.commonPrefix = '';
       this.commonSuffix = '';
       return;
     }
-    
+
     const names = this.files.map(f => f.name);
     const first = names[0];
-    
-    // Находим общий префикс
+
     let prefixLen = 0;
     for (let i = 0; i < first.length; i++) {
       const char = first[i];
@@ -284,8 +271,7 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
         break;
       }
     }
-    
-    // Находим общий суффикс
+
     let suffixLen = 0;
     for (let i = 0; i < first.length; i++) {
       const char = first[first.length - 1 - i];
@@ -295,45 +281,39 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
         break;
       }
     }
-    
-    // Проверяем, что префикс и суффикс не пересекаются
+
     if (prefixLen + suffixLen >= first.length) {
       this.commonPrefix = '';
       this.commonSuffix = '';
       return;
     }
-    
+
     this.commonPrefix = first.substring(0, prefixLen);
     this.commonSuffix = suffixLen > 0 ? first.substring(first.length - suffixLen) : '';
-
   }
 
-  /**
-   * Возвращает сокращённое имя файла
-   */
   getShortFileName(fileName: string): string {
     if (!this.commonPrefix && !this.commonSuffix) {
       return fileName;
     }
-    
+
     const start = this.commonPrefix.length;
-    const end = this.commonSuffix.length > 0 
-      ? fileName.length - this.commonSuffix.length 
+    const end = this.commonSuffix.length > 0
+      ? fileName.length - this.commonSuffix.length
       : fileName.length;
-    
+
     if (end <= start) {
       return fileName;
     }
-    
+
     const shortName = fileName.substring(start, end).trim();
-    
+
     if (!shortName) return fileName;
 
     if (shortName.length < 5) {
       return `Серия ${shortName}`;
     }
-    
+
     return shortName;
   }
-
 }
