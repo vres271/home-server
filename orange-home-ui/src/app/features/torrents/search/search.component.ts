@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Output, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, inject, Output, ChangeDetectionStrategy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -41,6 +41,8 @@ import { TorrentResultsComponent } from '../torrent-results/torrent-results.comp
 export class SearchComponent {
 
   @Output() torrentAdded = new EventEmitter<void>();
+
+  @ViewChild('directSearchBlock') directSearchBlock!: ElementRef;
 
   public tmdbService = inject(TmdbService);
   private jackettService = inject(JackettService);
@@ -90,6 +92,22 @@ export class SearchComponent {
     this.searchQuery = '';
     this.results = [];
     this.cdr.markForCheck();
+  
+    setTimeout(() => {
+      if (this.directSearchBlock) {
+        this.directSearchBlock.nativeElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }
+    }, 0);
+  
+  }
+
+  closeDirectSearch(): void {
+    this.showDirectSearch = false;
+    this.searchQuery = '';
+    this.results = [];
   }
 
   // ─── TMDB ────────────────────────────────────────────────
