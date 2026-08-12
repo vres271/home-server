@@ -4,12 +4,13 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { TmdbSearchResult } from '../../../core/models/tmdb.model';
 import { TmdbService } from '../../../core/services/tmdb.service';
+import { SeasonSelectorComponent } from './season-selector/season-selector.component';
 
 @Component({
   selector: 'app-media-details',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, ButtonModule, TagModule],
+  imports: [CommonModule, ButtonModule, TagModule, SeasonSelectorComponent],
   templateUrl: './media-details.component.html',
   styleUrls: ['./media-details.component.css']
 })
@@ -19,6 +20,7 @@ export class MediaDetailsComponent {
   @Input() isLoadingDetails = false;
 
   @Output() goBack = new EventEmitter<void>();
+  @Output() seasonSelected = new EventEmitter<number>();
 
   public tmdb = inject(TmdbService);
 
@@ -43,4 +45,9 @@ export class MediaDetailsComponent {
     if (!this.fullDetails?.credits?.cast) return [];
     return this.fullDetails.credits.cast.slice(0, 6);
   }
+
+  onSeasonChange(seasonNumber: number) {
+    this.seasonSelected.emit(seasonNumber);
+  }
+
 }

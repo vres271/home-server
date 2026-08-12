@@ -92,7 +92,7 @@ export class TmdbService {
     const params = new HttpParams()
       .set('api_key', this.apiKey)
       .set('language', this.language)
-      .set('append_to_response', 'videos,credits'); // Магия TMDB: всё в одном запросе
+      .set('append_to_response', 'videos,credits,seasons'); // Магия TMDB: всё в одном запросе
 
     return this.http.get<any>(`${this.apiBaseUrl}/3/${mediaType}/${id}`, { params });
   }

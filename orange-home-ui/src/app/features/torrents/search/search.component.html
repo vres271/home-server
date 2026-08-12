@@ -79,7 +79,8 @@
     [media]="selectedMedia"
     [fullDetails]="fullMediaDetails"
     [isLoadingDetails]="isLoadingDetails"
-    (goBack)="onGoBack()">
+    (goBack)="onGoBack()"
+    (seasonSelected)="onSeasonSelected($event)">
   </app-media-details>
 
   <div>
@@ -93,6 +94,13 @@
       <div class="flex justify-content-center align-items-center py-6">
         <i class="pi pi-spin pi-spinner text-3xl text-primary mr-3"></i>
         <span class="text-500">Ищем лучшие раздачи...</span>
+      </div>
+    }
+
+    @if (!showDirectSearch && selectedSeason > 0 && results.length > 0) {
+      <div class="flex align-items-center gap-2 mb-3 text-sm text-500">
+        <i class="pi pi-filter"></i>
+        Показаны только раздачи для Сезона {{ selectedSeason }}
       </div>
     }
 

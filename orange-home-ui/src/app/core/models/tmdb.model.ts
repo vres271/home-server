@@ -34,3 +34,13 @@ export interface TmdbVideo {
   site: string;
   type: string;
 }
+
+export interface TmdbSeason {
+  season_number: number;
+  name: string;
+  air_date: string | null;
+  episode_count: number;
+  poster_path: string | null;
+  overview: string;
+  vote_average: number;
+}

@@ -30,33 +30,33 @@
     <div class="content-wrapper">
       <div class="info-col">
         <h1 class="title mb-2">{{ getTitle() }}</h1>
-        
-      <div class="meta-row mb-4">
-        <!-- Первая строка: год, рейтинг, длительность (всегда вместе) -->
-        <div class="flex flex-wrap gap-3 mb-2">
-          <span class="flex align-items-center gap-1">
-            <i class="pi pi-calendar text-500"></i> {{ getYear() }}
-          </span>
-          <span class="flex align-items-center gap-1">
-            <i class="pi pi-star-fill text-yellow-500"></i> 
-            <strong>{{ media.vote_average | number:'1.1-1' }}</strong>
-          </span>
-          @if (media.media_type === 'movie' && fullDetails.runtime) {
+
+        <div class="meta-row mb-4">
+          <!-- Первая строка: год, рейтинг, длительность (всегда вместе) -->
+          <div class="flex flex-wrap gap-3 mb-2">
             <span class="flex align-items-center gap-1">
-              <i class="pi pi-clock text-500"></i> {{ fullDetails.runtime }} мин.
+              <i class="pi pi-calendar text-500"></i> {{ getYear() }}
             </span>
-          }
-        </div>
-        
-        <!-- Вторая строка: жанры (всегда отдельной строкой) -->
-        @if (fullDetails.genres && fullDetails.genres.length > 0) {
-          <div class="flex flex-wrap gap-2">
-            @for (genre of fullDetails.genres; track genre.id) {
-              <p-tag [value]="genre.name" severity="secondary"></p-tag>
+            <span class="flex align-items-center gap-1">
+              <i class="pi pi-star-fill text-yellow-500"></i> 
+              <strong>{{ media.vote_average | number:'1.1-1' }}</strong>
+            </span>
+            @if (media.media_type === 'movie' && fullDetails.runtime) {
+              <span class="flex align-items-center gap-1">
+                <i class="pi pi-clock text-500"></i> {{ fullDetails.runtime }} мин.
+              </span>
             }
           </div>
-        }
-      </div>
+          
+          <!-- Вторая строка: жанры (всегда отдельной строкой) -->
+          @if (fullDetails.genres && fullDetails.genres.length > 0) {
+            <div class="flex flex-wrap gap-2">
+              @for (genre of fullDetails.genres; track genre.id) {
+                <p-tag [value]="genre.name" severity="secondary"></p-tag>
+              }
+            </div>
+          }
+        </div>
 
         <h3 class="text-xl font-semibold mb-2">Описание</h3>
         <p class="overview text-500 line-height-3 mb-4">{{ fullDetails.overview || 'Описание отсутствует.' }}</p>
@@ -81,6 +81,15 @@
             }
           </div>
         }
+
+        <!-- Выбор сезона (только для сериалов) -->
+        @if (media.media_type === 'tv' && fullDetails?.seasons) {
+          <app-season-selector 
+            [seasons]="fullDetails.seasons" 
+            (seasonSelected)="onSeasonChange($event)">
+          </app-season-selector>
+        }
+
       </div>
     </div>
   }

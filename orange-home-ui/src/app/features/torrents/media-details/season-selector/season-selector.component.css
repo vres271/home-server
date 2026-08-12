@@ -1,0 +1,205 @@
+.season-selector-container {
+  margin-bottom: 1.5rem;
+  background-color: var(--surface-100);
+  border-radius: 8px;
+  border: 1px solid var(--surface-200);
+}
+
+/* === GRID VIEW === */
+.seasons-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.season-card {
+  background: var(--surface-card);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.season-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* 🔥 Используем те же переменные PrimeNG, что и input в фокусе */
+.season-card.selected {
+  border-color: var(--p-inputtext-focus-border-color, var(--primary-color));
+  box-shadow: var(--p-inputtext-focus-ring-shadow, 0 0 0 3px var(--p-inputtext-focus-ring-color, var(--primary-color)));
+}
+
+.poster-wrapper {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  background-color: var(--surface-200);
+}
+
+.poster-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.no-poster {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Бейдж номера сезона (правый верхний угол) */
+.season-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  z-index: 2;
+}
+
+/* Бейдж года (левый верхний угол) */
+.season-year-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.75);
+  color: white;
+  font-size: 0.75rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 2;
+}
+
+/* === LIST VIEW === */
+.seasons-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.season-row {
+  display: flex;
+  gap: 1rem;
+  background: var(--surface-card);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 1rem;
+  transition: all 0.2s ease;
+}
+
+.season-row:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* 🔥 Используем те же переменные PrimeNG */
+.season-row.selected {
+  border-color: var(--p-inputtext-focus-border-color, var(--primary-color));
+  box-shadow: var(--p-inputtext-focus-ring-shadow, 0 0 0 3px var(--p-inputtext-focus-ring-color, var(--primary-color)));
+}
+
+.row-poster {
+  flex-shrink: 0;
+  width: 100px;
+  height: 150px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: var(--surface-200);
+}
+
+.row-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.row-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.row-overview {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* 🔥 Галочка выбора (правый нижний угол) */
+.season-check-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: var(--p-inputtext-focus-border-color, var(--primary-color));
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+  animation: checkAppear 0.2s ease-out;
+}
+
+@keyframes checkAppear {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* === MOBILE === */
+@media (max-width: 768px) {
+  .seasons-grid {
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  }
+  
+  .season-row {
+    flex-direction: column;
+    align-items: center; /* 🔥 Центрируем всё содержимое */
+    text-align: center; /* 🔥 Текст по центру */
+    padding: 0.75rem;
+  }
+  
+  .row-poster {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 2 / 3;
+    max-width: 200px;
+    margin-bottom: 0.75rem; /* 🔥 Отступ после постера */
+  }
+  
+  .row-content {
+    width: 100%;
+    text-align: center; /* 🔥 Контент по центру */
+  }
+  
+  .row-meta {
+    justify-content: center; /* 🔥 Метаданные по центру */
+  }
+  
+  .row-overview {
+    -webkit-line-clamp: 5;
+    text-align: left; /* 🔥 Описание читаем слева направо */
+  }
+}

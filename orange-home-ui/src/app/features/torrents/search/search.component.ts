@@ -64,6 +64,10 @@ export class SearchComponent {
   results: JackettResult[] = [];
   searchLoading = false;
 
+  // 🔥 1. Храним "сырые" результаты от Jackett до применения фильтров
+  allJackettResults: JackettResult[] = [];
+  selectedSeason: number = 0;
+
   // ─── Навигация ───────────────────────────────────────────
 
   onMediaSelected(media: TmdbSearchResult) {
@@ -71,8 +75,14 @@ export class SearchComponent {
     this.selectedMedia = media;
     this.fullMediaDetails = null;
     this.isLoadingDetails = true;
+    this.searchLoading = true; 
+    
+    // 🔥 2. Сбрасываем все состояния при выборе нового медиа
     this.results = [];
+    this.allJackettResults = [];
+    this.selectedSeason = 0;
     this.cdr.markForCheck();
+    
     this.fetchMediaDetailsAndSearchJackett(media);
   }
 
@@ -81,6 +91,8 @@ export class SearchComponent {
     this.selectedMedia = null;
     this.fullMediaDetails = null;
     this.results = [];
+    this.allJackettResults = [];
+    this.selectedSeason = 0;
     this.cdr.markForCheck();
   }
 
@@ -91,6 +103,7 @@ export class SearchComponent {
     this.fullMediaDetails = null;
     this.searchQuery = '';
     this.results = [];
+    this.allJackettResults = [];
     this.cdr.markForCheck();
   
     setTimeout(() => {
@@ -101,13 +114,26 @@ export class SearchComponent {
         });
       }
     }, 0);
-  
   }
 
   closeDirectSearch(): void {
     this.showDirectSearch = false;
     this.searchQuery = '';
     this.results = [];
+  }
+
+  // ─── Выбор сезона ────────────────────────────────────────
+
+  // 🔥 3. ТЕПЕРЬ ЭТО МГНОВЕННО: никаких запросов, только клиентская фильтрация
+  onSeasonSelected(seasonNumber: number) {
+    this.selectedSeason = seasonNumber;
+    
+    // 🔥 Если поиск ещё идёт, просто запоминаем выбор. 
+    // Фильтрация применится автоматически, когда запрос завершится.
+    // Если поиск уже завершён, фильтруем мгновенно.
+    if (!this.searchLoading) {
+      this.applySeasonFilter(false);
+    }
   }
 
   // ─── TMDB ────────────────────────────────────────────────
@@ -139,10 +165,7 @@ export class SearchComponent {
   }
 
   private searchJackettByImdbId(media: TmdbSearchResult) {
-    this.searchLoading = true;
-    this.results = [];
-    this.cdr.markForCheck();
-
+    // Запрашиваем external_ids ТОЛЬКО один раз при первом открытии
     this.tmdbService.getExternalIds(media.id, media.media_type).subscribe({
       next: (externalIds) => {
         let query = '';
@@ -155,50 +178,102 @@ export class SearchComponent {
             media.media_type === 'movie' ? media.release_date : media.first_air_date
           );
           query = year ? `${title} ${year}` : title;
-          console.log(`⚠️ imdb_id не найден, используем fallback: "${query}"`);
         }
 
         this.searchQuery = query;
         this.cdr.markForCheck();
-        this.executeJackettSearch(query);
+        
+        // Выполняем запрос к Jackett
+        this.executeJackettSearch(query, false);
       },
       error: (err) => {
         console.error('Ошибка получения external_ids:', err);
         this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось получить данные о фильме' });
-        this.searchLoading = false;
         this.cdr.markForCheck();
       }
     });
   }
 
+  // 🔥 4. Новый метод: применяет фильтр к уже сохраненным allJackettResults
+  private applySeasonFilter(isDirectSearch: boolean) {
+    let filtered = this.allJackettResults;
+
+    // Применяем фильтр только если это не прямой поиск и выбран конкретный сезон
+    if (!isDirectSearch && this.selectedSeason > 0) {
+      filtered = this.filterResultsBySeason(this.allJackettResults, this.selectedSeason);
+    }
+
+    this.results = filtered;
+    this.cdr.markForCheck();
+
+    // Показываем предупреждение ТОЛЬКО если поиск завершён и результатов действительно 0
+    if (this.results.length === 0 && !this.searchLoading && !isDirectSearch) {
+      if (this.allJackettResults.length > 0) {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Внимание',
+          detail: `Раздачи для Сезона ${this.selectedSeason} не найдены. Попробуйте "Все сезоны".`
+        });
+      } else {
+        this.messageService.add({
+          severity: 'warn',
+          summary: 'Внимание',
+          detail: `Раздачи по запросу не найдены. Попробуйте прямой поиск.`
+        });
+      }
+    }
+  }
+
+  /**
+   * Фильтрует раздачи по выбранному сезону
+   */
+  private filterResultsBySeason(results: JackettResult[], season: number): JackettResult[] {
+    if (season === 0) return results;
+
+    return results.filter(result => {
+      const title = this.getDisplayTitle(result);
+      const seasonStr = season.toString().padStart(2, '0'); // "05"
+      const seasonNum = season.toString(); // "5"
+      
+      const patterns = [
+        new RegExp(`[sS]${seasonStr}(?!\\d)`, 'i'),
+        new RegExp(`[sS]0?\\d+[\\-\\–][sS]?0?(${seasonNum}|${seasonStr})\\b`, 'i'),
+        new RegExp(`(season|сезон)\\s*${seasonNum}\\b`, 'i'),
+        new RegExp(`\\b${seasonNum}[\\-й]\\s*(season|сезон)`, 'i')
+      ];
+
+      return patterns.some(pattern => pattern.test(title));
+    });
+  }
+
+  getDisplayTitle(result: JackettResult): string {
+    return (result.Description && result.Description !== result.Title) 
+      ? result.Description 
+      : (result.Title || 'Без названия');
+  }
+
   search() {
     if (!this.searchQuery.trim()) return;
-    this.searchLoading = true;
-    this.cdr.markForCheck();
     this.executeJackettSearch(this.searchQuery, true);
   }
 
   private executeJackettSearch(query: string, isDirectSearch = false) {
-    this.jackettService.search(query).pipe(
-      finalize(() => {
-        this.searchLoading = false;
-        this.cdr.markForCheck();
-      })
-    ).subscribe({
+    this.searchLoading = true;
+    this.cdr.markForCheck();
+
+    this.jackettService.search(query).subscribe({
       next: (res) => {
-        this.results = res.Results || [];
-        if (this.results.length === 0) {
-          this.messageService.add({
-            severity: isDirectSearch ? 'info' : 'warn',
-            summary: isDirectSearch ? 'Информация' : 'Внимание',
-            detail: isDirectSearch
-              ? 'Ничего не найдено'
-              : `Раздачи по запросу "${query}" не найдены. Попробуйте прямой поиск.`
-          });
-        }
-        this.cdr.markForCheck();
+        // 1. Сохраняем сырые результаты
+        this.allJackettResults = res.Results || [];
+        
+        // 2. 🔥 СНИМАЕМ флаг загрузки ЗДЕСЬ, до вызова фильтрации
+        this.searchLoading = false;
+        
+        // 3. Применяем фильтр (он увидит, что searchLoading === false, и сработает корректно)
+        this.applySeasonFilter(isDirectSearch);
       },
       error: () => {
+        this.searchLoading = false;
         this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось выполнить поиск в Jackett' });
         this.cdr.markForCheck();
       }
@@ -213,16 +288,14 @@ export class SearchComponent {
   clearDirectSearch(): void {
     this.searchQuery = '';
     this.results = [];
+    this.allJackettResults = [];
     this.cdr.markForCheck();
   }
 
   // ─── qBittorrent ─────────────────────────────────────────
 
   addTorrent(result: JackettResult) {
-    const displayName = result.Description && result.Description !== result.Title
-      ? result.Description
-      : result.Title || 'Без названия';
-
+    const displayName = this.getDisplayTitle(result);
     const isSeries = /s\d{1,2}(e\d{1,2})?|сезон|серия|season|episode|\d{1,2}[хx]\d{1,2}/i.test(displayName.toLowerCase());
     const category = isSeries ? 'series' : 'movies';
 
