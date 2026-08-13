@@ -38,5 +38,11 @@
       "^/tmdb-images": "/tmdb-images"
     },
     "logLevel": "debug"
+  },
+  "/api/system": {
+    "target": "http://192.168.0.150",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
   }
 }

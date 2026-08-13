@@ -1,0 +1,63 @@
+.power-card {
+  max-width: 720px;
+}
+
+.power-loading,
+.power-waiting {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 0;
+}
+
+.power-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.power-info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid rgba(127, 127, 127, 0.15);
+}
+
+.power-info-row:last-child {
+  border-bottom: none;
+}
+
+.dry-run-active {
+  color: #f59e0b;
+}
+
+.power-actions {
+  display: flex;
+  gap: 0.2rem;
+  flex-wrap: wrap;
+}
+
+.temp-normal {
+  color: #22c55e;
+}
+
+.temp-warning {
+  color: #f59e0b;
+}
+
+.temp-danger {
+  color: #ef4444;
+  font-weight: 700;
+}
+.power-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.power-header h3 {
+  margin: 0;
+}

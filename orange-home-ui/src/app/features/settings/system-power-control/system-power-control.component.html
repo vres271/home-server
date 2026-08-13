@@ -1,0 +1,84 @@
+<div class="power-header">
+  <h3 class="m-0">Управление питанием</h3>
+  <p-button
+    icon="pi pi-sync"
+    severity="secondary"
+    [text]="true"
+    [rounded]="true"
+    [loading]="loading()"
+    [disabled]="loading() || waitingAction() !== null"
+    (onClick)="loadStatus()"
+    title="Обновить статус"
+  ></p-button>
+</div>
+  @if (loading()) {
+    <div class="power-loading">
+      <p-progressSpinner styleClass="w-2rem h-2rem" />
+      <span>Загрузка статуса...</span>
+    </div>
+  } @else {
+    @if (status(); as s) {
+      <div class="power-info">
+        <div class="power-info-row">
+          <span>Сервис:</span>
+          <strong>{{ s.enabled ? 'активен' : 'отключен' }}</strong>
+        </div>
+
+        <div class="power-info-row">
+          <span>Dry-run:</span>
+          <strong [class.dry-run-active]="s.dryRun">{{ s.dryRun ? 'включен' : 'выключен' }}</strong>
+        </div>
+
+        <div class="power-info-row">
+          <span>Uptime:</span>
+          <strong>{{ formatUptime(s.uptimeSeconds) }}</strong>
+        </div>
+
+        <div class="power-info-row">
+          <span>Температура CPU:</span>
+          <strong [ngClass]="tempClass(s.cpuTempCelsius)">
+            {{ formatTemp(s.cpuTempCelsius) }}
+          </strong>
+        </div>        
+
+      </div>
+
+      @if (waitingAction(); as action) {
+        <div class="power-waiting">
+          <p-progressSpinner styleClass="w-2rem h-2rem" />
+          @if (action === 'reboot') {
+            <span>Сервер перезагружается. Ожидание...</span>
+          } @else {
+            <span>Сервер выключается...</span>
+          }
+        </div>
+      } @else {
+        <div class="flex flex-column md:flex-row gap-2">
+          <p-button 
+            icon="pi pi-refresh" 
+            styleClass="w-full"
+            severity="secondary" 
+            (onClick)="confirmReboot()"
+            [disabled]="!s.enabled || !s.actions.reboot || actionInProgress()"
+            label="Перезагрузка">
+          </p-button>
+          
+          <p-button 
+            icon="pi pi-power-off" 
+            styleClass="w-full"
+            severity="danger" 
+            (onClick)="confirmShutdown()"
+            [disabled]="!s.enabled || !s.actions.shutdown || actionInProgress()"
+            label="Выключение">
+          </p-button>
+        </div>
+      }
+    } @else {
+      <p>Не удалось загрузить статус системы.</p>
+      <button pButton type="button" label="Повторить" icon="pi pi-refresh" (click)="loadStatus()"></button>
+    }
+  }
+
+
+<p-confirmDialog />
+<p-toast />

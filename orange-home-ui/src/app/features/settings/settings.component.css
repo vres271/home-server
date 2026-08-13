@@ -1,0 +1,10 @@
+.settings-page {
+  padding: 0 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.settings-card {
+  max-width: 720px;
+}

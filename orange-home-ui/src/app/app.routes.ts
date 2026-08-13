@@ -18,7 +18,11 @@ export const routes: Routes = [
       {
         path: 'torrents',
         loadComponent: () => import('./features/torrents/torrents.component').then(m => m.TorrentsComponent)
-      }
+      },
+      {
+        path: 'settings',
+        loadComponent: () => import('./features/settings/settings.component').then(m => m.SettingsComponent)
+      }      
     ]
   },
   {

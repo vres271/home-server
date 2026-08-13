@@ -5,7 +5,8 @@
 ## Назначение
 
 Сервис позволяет веб-интерфейсу (Angular) выполнять безопасные системные команды
-`reboot` и `shutdown` на домашнем сервере Orange Pi H3.
+`reboot` и `shutdown` на домашнем сервере Orange Pi H3, а также получать информацию
+о состоянии системы: uptime и температуру CPU.
 
 ## Архитектура
 
@@ -34,7 +35,7 @@ Browser (Angular UI)
 ```
 
 ### `GET /api/system/status`
-Текущее состояние сервиса и сервера.
+Текущее состояние сервиса и сервера, включая температуру CPU.
 
 Ответ:
 ```json
@@ -45,9 +46,13 @@ Browser (Angular UI)
   "actionInProgress": false,
   "currentAction": null,
   "time": "2026-08-13T...",
-  "uptimeSeconds": 12345.6
+  "uptimeSeconds": 12345.6,
+  "cpuTempCelsius": 31.1
 }
 ```
+
+Поле `cpuTempCelsius` читается из системного файла (по умолчанию `/sys/class/thermal/thermal_zone0/temp`),
+где значение хранится в миллиградусах. Сервис автоматически конвертирует его в градусы Цельсия.
 
 ### `POST /api/system/actions/reboot`
 Запуск перезагрузки.
@@ -80,6 +85,21 @@ X-System-Action: true
 5. Команда выполняется через `subprocess.run` напрямую (без shell), что исключает
    инъекции.
 
+## Мониторинг температуры
+
+Сервис читает температуру CPU из системного файла thermal zone. По умолчанию используется:
+
+```
+/sys/class/thermal/thermal_zone0/temp
+```
+
+Путь можно изменить через переменную окружения `POWER_TEMP_PATH`.
+
+В веб-интерфейсе Angular отображает температуру с цветовой индикацией:
+- **Зеленый** (до 50°C) — нормальная температура
+- **Желтый** (50–65°C) — повышенная температура
+- **Красный** (выше 65°C) — перегрев, требуется внимание
+
 ## Режим dry-run
 
 При `POWER_DRY_RUN=true` сервис принимает команды и пишет в лог, но не выполняет
@@ -101,6 +121,7 @@ X-System-Action: true
 | `POWER_USE_SUDO` | `false` | Использовать sudo (для не-root режима) |
 | `POWER_SUDO_PATH` | `/usr/bin/sudo` | Путь к sudo |
 | `POWER_SYSTEMCTL_PATH` | `/usr/bin/systemctl` | Путь к systemctl |
+| `POWER_TEMP_PATH` | `/sys/class/thermal/thermal_zone0/temp` | Путь к файлу температуры CPU |
 | `POWER_REQUIRE_ACTION_HEADER` | `true` | Требовать заголовок `X-System-Action` |
 
 После изменения конфига:
@@ -111,7 +132,13 @@ sudo systemctl restart power-control.service
 ## Nginx
 
 В основной конфиг сайта (например, `/etc/nginx/sites-available/orange-home-ui`)
-добавляется:
+добавляется сниппет:
+
+```nginx
+include /etc/nginx/snippets/power-control.conf;
+```
+
+Содержимое сниппета (`/etc/nginx/snippets/power-control.conf`):
 
 ```nginx
 location /api/system/ {
@@ -136,8 +163,11 @@ location /api/system/ {
 
 - `/opt/power-control/app.py` — код сервиса
 - `/opt/power-control/.venv/` — виртуальное окружение Python
+- `/opt/power-control/install.sh` — скрипт установки/обновления
+- `/opt/power-control/README.md` — эта документация
 - `/etc/power-control.env` — конфигурация
 - `/etc/systemd/system/power-control.service` — systemd-юнит
+- `/etc/nginx/snippets/power-control.conf` — Nginx-сниппет
 
 ## Управление
 
@@ -147,32 +177,7 @@ sudo systemctl restart power-control.service
 sudo journalctl -u power-control -f
 ```
 
-## Поведение после команд
-
-- **reboot**: сервер перезагружается, systemd корректно останавливает qBittorrent,
-  Jackett и другие сервисы. После загрузки сервис `power-control` стартует
-  автоматически.
-- **shutdown**: сервер выключается. Включить обратно можно только физически,
-  через умную розетку или WoL (если поддерживается).
-
-## Безопасность
-
-Сервис работает от `root`, поэтому:
-
-- доступен только из локальной сети (ограничение Nginx);
-- не имеет авторизации (предполагается доверенная локальная сеть);
-- требует заголовок `X-System-Action: true` как минимальную защиту от CSRF;
-- не выполняет произвольные shell-команды — только заранее известные действия;
-- имеет защиту от повторного запуска действия;
-- имеет режим `dry_run` для безопасной разработки.
-
----
-
-## 2. Bash-скрипт для установки
-
----
-
-## Как пользоваться скриптом
+## Установка и обновление
 
 ### Предварительный просмотр (что будет сделано)
 ```bash
@@ -184,7 +189,7 @@ sudo /opt/power-control/install.sh --dry-run
 sudo /opt/power-control/install.sh
 ```
 
-### Установка с другой подсетью (например, если у тебя `192.168.1.0/24`)
+### Установка с другой подсетью (например, `192.168.1.0/24`)
 ```bash
 sudo /opt/power-control/install.sh --subnet 192.168.1.0/24
 ```
@@ -194,24 +199,63 @@ sudo /opt/power-control/install.sh --subnet 192.168.1.0/24
 sudo /opt/power-control/install.sh --force
 ```
 
----
+Скрипт **не модифицирует** основной Nginx-конфиг автоматически. Вместо этого он создает
+готовый сниппет `/etc/nginx/snippets/power-control.conf`, который нужно один раз
+подключить в основной конфиг сайта через `include`.
 
-## Важное про Nginx
+## Поведение после команд
 
-Скрипт **не модифицирует** твой конфиг `orange-home-ui` автоматически — это было бы опасно. Вместо этого он создает готовый сниппет:
+- **reboot**: сервер перезагружается, systemd корректно останавливает qBittorrent,
+  Jackett и другие сервисы. После загрузки сервис `power-control` стартует
+  автоматически. Angular UI ожидает возврата сервера через polling `/api/system/health`.
+- **shutdown**: сервер выключается. Включить обратно можно только физически,
+  через умную розетку или WoL (если поддерживается).
 
+## Безопасность
+
+Сервис работает от `root`, поэтому:
+
+- доступен только из локальной сети (ограничение Nginx по IP-подсети);
+- не имеет авторизации (предполагается доверенная локальная сеть);
+- требует заголовок `X-System-Action: true` как минимальную защиту от CSRF;
+- не выполняет произвольные shell-команды — только заранее известные действия;
+- имеет защиту от повторного запуска действия;
+- имеет режим `dry_run` для безопасной разработки.
+
+## Интеграция с Angular
+
+В Angular-приложении используются:
+
+- `SystemService` (`core/services/system.service.ts`) — HTTP-клиент для API
+- `SystemStatus` модель (`core/models/system.model.ts`) — типы данных
+- `SystemPowerControlComponent` (`features/settings/components/system-power-control/`) — UI компонент
+
+Все запросы к действиям (reboot/shutdown) отправляются с заголовком:
 ```
-/etc/nginx/snippets/power-control.conf
+X-System-Action: true
 ```
 
-Тебе останется только один раз добавить одну строку в свой конфиг:
+После успешной перезагрузки UI автоматически опрашивает `/api/system/health` каждые 3 секунды,
+чтобы дождаться возврата сервера и обновить статус.
 
-```nginx
-server {
-    ...
-    include /etc/nginx/snippets/power-control.conf;
-    ...
-}
+## Возможные проблемы
+
+### Сервис не запускается
+```bash
+sudo journalctl -u power-control -n 50
 ```
 
-Это безопасно: при переустановке сервиса сниппет просто пересоздается, а твой основной конфиг остается нетронутым.
+### Ошибка 403 Forbidden
+Nginx отклонил запрос из-за ограничения по IP. Проверь, что твой IP входит в разрешенную подсеть
+в `/etc/nginx/snippets/power-control.conf`.
+
+### Ошибка 409 Conflict
+Действие уже выполняется. Подожди 10–15 секунд или перезапусти сервис.
+
+### Температура не отображается
+Проверь, существует ли файл `/sys/class/thermal/thermal_zone0/temp`:
+```bash
+cat /sys/class/thermal/thermal_zone0/temp
+```
+
+Если файла нет, укажи правильный путь в `POWER_TEMP_PATH`.
