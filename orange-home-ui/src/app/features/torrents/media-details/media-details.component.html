@@ -88,6 +88,31 @@
             [seasons]="fullDetails.seasons" 
             (seasonSelected)="onSeasonChange($event)">
           </app-season-selector>
+
+          <!-- 🔥 Кнопка "Эпизоды" -->
+          @if (selectedSeason > 0) {
+            <div>
+              <p-button
+                [label]="showEpisodes ? 'Скрыть эпизоды' : 'Эпизоды'"
+                [icon]="showEpisodes ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+                severity="secondary"
+                outlined="true"
+                (onClick)="toggleEpisodes()"
+                [loading]="isLoadingEpisodes"
+                styleClass="w-full md:w-auto">
+              </p-button>
+            </div>
+
+            <!-- 🔥 Список эпизодов -->
+            @if (showEpisodes) {
+              <app-episode-list
+                [episodes]="episodes"
+                [seasonNumber]="selectedSeason"
+                (hideEpisodes)="toggleEpisodes()">
+              </app-episode-list>
+            }
+          }          
+          
         }
 
       </div>

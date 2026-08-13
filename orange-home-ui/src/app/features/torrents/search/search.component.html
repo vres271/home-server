@@ -75,10 +75,11 @@
 <!-- ═══════════════════════════════════════════════════════════════ -->
 @if (viewState === 'details' && selectedMedia) {
   
-  <app-media-details 
+  <app-media-details
     [media]="selectedMedia"
     [fullDetails]="fullMediaDetails"
     [isLoadingDetails]="isLoadingDetails"
+    [selectedSeason]="selectedSeason"
     (goBack)="onGoBack()"
     (seasonSelected)="onSeasonSelected($event)">
   </app-media-details>

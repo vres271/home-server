@@ -97,4 +97,26 @@ export class TmdbService {
     return this.http.get<any>(`${this.apiBaseUrl}/3/${mediaType}/${id}`, { params });
   }
 
+  /**
+   * Получает список эпизодов для конкретного сезона сериала
+   */
+  getSeasonEpisodes(tvId: number, seasonNumber: number): Observable<any> {
+    const params = new HttpParams()
+      .set('api_key', this.apiKey)
+      .set('language', this.language);
+
+    return this.http.get<any>(
+      `${this.apiBaseUrl}/3/tv/${tvId}/season/${seasonNumber}`,
+      { params }
+    );
+  }
+
+  /**
+   * Формирует URL для скриншота эпизода (горизонтальное изображение)
+   */
+  getStillUrl(path: string | null): string | null {
+    if (!path) return null;
+    return `${this.imagesBaseUrl}/t/p/w300${path}`;
+  }
+
 }

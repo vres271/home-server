@@ -1,0 +1,109 @@
+@if (episodes && episodes.length > 0) {
+  <div class="episode-list-container">
+
+    <!-- Заголовок и переключатель -->
+    <div class="flex justify-content-between align-items-center mb-3">
+      <h3 class="text-lg font-semibold m-0">
+        Эпизоды ({{ episodes.length }})
+      </h3>
+      <div class="flex gap-1">
+        <p-button
+          icon="pi pi-th-large"
+          [severity]="viewMode === 'grid' ? 'primary' : 'secondary'"
+          [text]="true"
+          [rounded]="true"
+          (onClick)="onToggleViewMode()"
+          title="Плитка">
+        </p-button>
+        <p-button
+          icon="pi pi-list"
+          [severity]="viewMode === 'list' ? 'primary' : 'secondary'"
+          [text]="true"
+          [rounded]="true"
+          (onClick)="onToggleViewMode()"
+          title="Список">
+        </p-button>
+      </div>
+    </div>
+
+    <!-- РЕЖИМ ПЛИТКИ -->
+    @if (viewMode === 'grid') {
+      <div class="episodes-grid">
+        @for (episode of episodes; track episode.episode_number) {
+          <div class="episode-card">
+            <div class="still-wrapper">
+              @if (getStillUrl(episode.still_path); as still) {
+                <img [src]="still" [alt]="episode.name" loading="lazy" />
+              } @else {
+                <div class="no-still">
+                  <i class="pi pi-image text-3xl text-400"></i>
+                </div>
+              }
+              
+              <!-- Бейдж номера эпизода -->
+              <div class="episode-badge">{{ getEpisodeLabel(episode) }}</div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- РЕЖИМ СПИСКА -->
+    @if (viewMode === 'list') {
+      <div class="episodes-list">
+        @for (episode of episodes; track episode.episode_number) {
+          <div class="episode-row">
+            <!-- Скриншот слева -->
+            <div class="row-still">
+              @if (getStillUrl(episode.still_path); as still) {
+                <img [src]="still" [alt]="episode.name" loading="lazy" />
+              } @else {
+                <div class="no-still">
+                  <i class="pi pi-image text-2xl text-400"></i>
+                </div>
+              }
+              
+              <!-- 🔥 Бейдж номера эпизода (правый верхний угол) -->
+              <div class="episode-badge">{{ getEpisodeLabel(episode) }}</div>
+            </div>
+
+            <!-- Информация справа -->
+            <div class="row-content">
+              <h4 class="text-base font-bold m-0 mb-1">
+                {{ episode.name }}
+              </h4>
+              
+              <div class="row-meta flex flex-wrap align-items-center gap-2 mb-2 text-sm text-500">
+                <!-- 🔥 Полная дата вместо года -->
+                <span>{{ episode.air_date ? (episode.air_date | date:'dd.MM.yyyy') : 'TBA' }}</span>
+                @if (episode.runtime) {
+                  <span>• {{ episode.runtime }} мин</span>
+                }
+                <span class="flex align-items-center gap-1">
+                  <i class="pi pi-star-fill text-yellow-500 text-xs"></i>
+                  {{ episode.vote_average | number:'1.1-1' }}
+                </span>
+              </div>
+              
+              <p class="row-overview text-sm text-500 line-height-3 mb-0">
+                {{ episode.overview || 'Описание отсутствует.' }}
+              </p>
+            </div>
+          </div>
+        }
+        <!-- 🔥 Кнопка "Скрыть эпизоды" в конце списка -->
+        <div class="flex justify-content-center mt-3">
+          <p-button
+            label="Скрыть эпизоды"
+            icon="pi pi-chevron-up"
+            severity="secondary"
+            text="true"
+            size="small"
+            (onClick)="onHideEpisodes()">
+          </p-button>
+        </div>        
+      </div>
+    }
+
+  </div>
+}
