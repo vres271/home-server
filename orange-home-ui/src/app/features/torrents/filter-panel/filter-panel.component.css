@@ -1,0 +1,26 @@
+.filter-panel {
+  margin-bottom: 1rem;
+  background-color: var(--surface-100);
+  border-radius: 8px;
+  border: 1px solid var(--surface-200);
+}
+
+.selected-filters-row {
+  min-height: 32px; /* Чтобы не было скачков при пустом состоянии */
+}
+
+/* Анимация раскрытия */
+.filter-group {
+  animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(-5px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}

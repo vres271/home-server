@@ -1,0 +1,69 @@
+<div class="filter-panel">
+  <!-- Заголовок с переключателем -->
+  <div class="flex justify-content-between align-items-center mb-1">
+    <h3 class="text-lg font-semibold m-0 cursor-pointer" (click)="toggleExpanded()">Фильтры</h3>
+    <div class="flex gap-2">
+      @if (hasAnyFilter()) {
+        <p-button 
+          label="Сбросить" 
+          icon="pi pi-times" 
+          severity="secondary" 
+          text="true" 
+          size="small"
+          (onClick)="clearAll()">
+        </p-button>
+      }
+      <p-button 
+        [icon]="expanded ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"
+        [severity]="'secondary'"
+        [text]="true"
+        size="small"
+        (onClick)="toggleExpanded()"
+        [title]="expanded ? 'Свернуть' : 'Развернуть фильтры'">
+      </p-button>
+    </div>
+  </div>
+
+  <!-- СВЕРНУТЫЙ РЕЖИМ -->
+  @if (!expanded) {
+    @if (hasAnyFilter()) {
+      <div class="selected-filters-row flex flex-wrap gap-2">
+        @for (item of getSelectedValues(); track item.filterId + '-' + item.valueId) {
+          <p-button
+            [label]="item.label"
+            icon="pi pi-times"
+            iconPos="right"
+            severity="primary"
+            size="small"
+            (onClick)="toggleValue(item.filterId, item.valueId)"
+            title="Убрать фильтр">
+          </p-button>
+        }
+      </div>
+    } @else {
+      <div class="text-sm text-500 italic">
+        Фильтры не выбраны. Нажмите <i class="pi pi-chevron-down text-xs"></i> для выбора.
+      </div>
+    }
+  }
+
+  <!-- 🔥 ПОЛНЫЙ РЕЖИМ: все фильтры -->
+  @if (expanded) {
+    @for (filter of filters; track filter.id) {
+      <div class="filter-group mb-3">
+        <div class="text-sm font-semibold mb-2 text-500">{{ filter.label }}</div>
+        <div class="flex flex-wrap gap-2">
+          @for (value of filter.values; track value.id) {
+            <p-button
+              [label]="value.label"
+              [severity]="isSelected(filter.id, value.id) ? 'primary' : 'secondary'"
+              [outlined]="!isSelected(filter.id, value.id)"
+              size="small"
+              (onClick)="toggleValue(filter.id, value.id)">
+            </p-button>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>

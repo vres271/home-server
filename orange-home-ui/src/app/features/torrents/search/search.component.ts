@@ -17,23 +17,26 @@ import { TmdbSearchResult } from '../../../core/models/tmdb.model';
 import { TmdbSearchComponent } from '../tmdb-search/tmdb-search.component';
 import { MediaDetailsComponent } from '../media-details/media-details.component';
 import { TorrentResultsComponent } from '../torrent-results/torrent-results.component';
+import { FilterService } from '../../../core/services/filter.service';
+import { FilterPanelComponent } from "../filter-panel/filter-panel.component";
 
 @Component({
   selector: 'app-torrent-search',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    CommonModule, 
-    FormsModule, 
-    InputTextModule, 
-    ButtonModule, 
-    ToastModule, 
+    CommonModule,
+    FormsModule,
+    InputTextModule,
+    ButtonModule,
+    ToastModule,
     TmdbSearchComponent,
     MediaDetailsComponent,
     TorrentResultsComponent,
     IconFieldModule,
-    InputIconModule
-  ],
+    InputIconModule,
+    FilterPanelComponent
+],
   providers: [MessageService],
   templateUrl: './search.component.html',
   styleUrls: ['./search.component.css']
@@ -47,6 +50,7 @@ export class SearchComponent {
   public tmdbService = inject(TmdbService);
   private jackettService = inject(JackettService);
   private qbService = inject(QBittorrentService);
+  private filterService = inject(FilterService);
   private messageService = inject(MessageService);
   private cdr = inject(ChangeDetectorRef);
 
@@ -132,7 +136,7 @@ export class SearchComponent {
     // Фильтрация применится автоматически, когда запрос завершится.
     // Если поиск уже завершён, фильтруем мгновенно.
     if (!this.searchLoading) {
-      this.applySeasonFilter(false);
+      this.applyFilters(false);
     }
   }
 
@@ -194,25 +198,28 @@ export class SearchComponent {
     });
   }
 
-  // 🔥 4. Новый метод: применяет фильтр к уже сохраненным allJackettResults
-  private applySeasonFilter(isDirectSearch: boolean) {
-    let filtered = this.allJackettResults;
-
-    // Применяем фильтр только если это не прямой поиск и выбран конкретный сезон
-    if (!isDirectSearch && this.selectedSeason > 0) {
-      filtered = this.filterResultsBySeason(this.allJackettResults, this.selectedSeason);
+  // 🔥 Теперь этот метод использует FilterService для ВСЕХ фильтров (включая сезон)
+  private applyFilters(isDirectSearch: boolean) {
+    if (this.searchLoading) {
+      this.results = [];
+      this.cdr.markForCheck();
+      return;
     }
 
-    this.results = filtered;
+    // 🔥 Делегируем фильтрацию сервису
+    this.results = this.filterService.applyFilters(
+      this.allJackettResults,
+      this.selectedSeason
+    );
     this.cdr.markForCheck();
 
-    // Показываем предупреждение ТОЛЬКО если поиск завершён и результатов действительно 0
+    // Логика уведомлений
     if (this.results.length === 0 && !this.searchLoading && !isDirectSearch) {
       if (this.allJackettResults.length > 0) {
         this.messageService.add({
           severity: 'warn',
           summary: 'Внимание',
-          detail: `Раздачи для Сезона ${this.selectedSeason} не найдены. Попробуйте "Все сезоны".`
+          detail: `Раздачи не найдены с текущими фильтрами. Попробуйте изменить фильтры или выбрать "Все сезоны".`
         });
       } else {
         this.messageService.add({
@@ -270,7 +277,7 @@ export class SearchComponent {
         this.searchLoading = false;
         
         // 3. Применяем фильтр (он увидит, что searchLoading === false, и сработает корректно)
-        this.applySeasonFilter(isDirectSearch);
+        this.applyFilters(isDirectSearch);
       },
       error: () => {
         this.searchLoading = false;
@@ -333,4 +340,9 @@ export class SearchComponent {
       }
     });
   }
+
+  onFiltersChanged() {
+    this.applyFilters(false);
+  }
+
 }

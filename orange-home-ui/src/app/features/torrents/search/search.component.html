@@ -105,6 +105,8 @@
       </div>
     }
 
+    <app-filter-panel (filtersChanged)="onFiltersChanged()"></app-filter-panel>
+
     <!-- Список найденных торрентов или пустое состояние -->
     <app-torrent-results
       [results]="results"
