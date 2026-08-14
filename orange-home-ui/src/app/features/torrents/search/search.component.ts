@@ -67,6 +67,7 @@ export class SearchComponent {
   searchQuery = '';
   results: JackettResult[] = [];
   searchLoading = false;
+  emptyResultsMessage = '';
 
   // 🔥 1. Храним "сырые" результаты от Jackett до применения фильтров
   allJackettResults: JackettResult[] = [];
@@ -211,46 +212,17 @@ export class SearchComponent {
       this.allJackettResults,
       this.selectedSeason
     );
-    this.cdr.markForCheck();
+    this.emptyResultsMessage = '';
 
     // Логика уведомлений
     if (this.results.length === 0 && !this.searchLoading && !isDirectSearch) {
       if (this.allJackettResults.length > 0) {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Внимание',
-          detail: `Раздачи не найдены с текущими фильтрами. Попробуйте изменить фильтры или выбрать "Все сезоны".`
-        });
+        this.emptyResultsMessage = `Раздачи не найдены с текущими фильтрами. Попробуйте изменить фильтры или выбрать "Все сезоны".`
       } else {
-        this.messageService.add({
-          severity: 'warn',
-          summary: 'Внимание',
-          detail: `Раздачи по запросу не найдены. Попробуйте прямой поиск.`
-        });
+        this.emptyResultsMessage = `Раздачи по запросу не найдены. Попробуйте прямой поиск.`
       }
     }
-  }
-
-  /**
-   * Фильтрует раздачи по выбранному сезону
-   */
-  private filterResultsBySeason(results: JackettResult[], season: number): JackettResult[] {
-    if (season === 0) return results;
-
-    return results.filter(result => {
-      const title = this.getDisplayTitle(result);
-      const seasonStr = season.toString().padStart(2, '0'); // "05"
-      const seasonNum = season.toString(); // "5"
-      
-      const patterns = [
-        new RegExp(`[sS]${seasonStr}(?!\\d)`, 'i'),
-        new RegExp(`[sS]0?\\d+[\\-\\–][sS]?0?(${seasonNum}|${seasonStr})\\b`, 'i'),
-        new RegExp(`(season|сезон)\\s*${seasonNum}\\b`, 'i'),
-        new RegExp(`\\b${seasonNum}[\\-й]\\s*(season|сезон)`, 'i')
-      ];
-
-      return patterns.some(pattern => pattern.test(title));
-    });
+    this.cdr.markForCheck();
   }
 
   getDisplayTitle(result: JackettResult): string {
