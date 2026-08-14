@@ -18,6 +18,7 @@ export class TorrentResultsComponent {
   @Input() overlayMode = false;      // true = оверлей поверх старых результатов (прямой поиск)
   @Input() showEmptyState = false;   // true = показывать "Раздачи не найдены" с кнопкой
   @Input() hasSearched = false;      // true = поиск уже был выполнен (для простого "Ничего не найдено")
+  @Input() emptyResultsMessage = '';
 
   @Output() addTorrent = new EventEmitter<JackettResult>();
   @Output() requestDirectSearch = new EventEmitter<void>();
