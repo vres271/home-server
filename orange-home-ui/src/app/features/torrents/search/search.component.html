@@ -86,7 +86,7 @@
 
   <!-- 🔥 2.2. Детали фильма/сериала и результаты торрентов (показываем ТОЛЬКО если фильм выбран) -->
   @if (viewState === 'details' && selectedMedia) {
-    <div class="mt-4">
+    <div>
       <app-media-details
         [media]="selectedMedia"
         [fullDetails]="fullMediaDetails"

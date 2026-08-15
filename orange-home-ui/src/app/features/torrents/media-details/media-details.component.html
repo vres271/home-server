@@ -1,6 +1,8 @@
 <div class="media-details-container">
   <!-- Кнопка Назад -->
-  <button pButton icon="pi pi-arrow-left" label="Назад к результатам" class="p-button-text mb-3" (click)="goBack.emit()"></button>
+  <div class="back-btn">
+    <button pButton icon="pi pi-arrow-left" label="Назад" class="p-button-text" (click)="goBack.emit()"></button>
+  </div>
 
   @if (isLoadingDetails) {
     <div class="flex justify-content-center align-items-center py-8">

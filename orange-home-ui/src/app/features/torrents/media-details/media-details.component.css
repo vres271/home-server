@@ -2,6 +2,16 @@
   animation: fadeIn 0.3s ease-in-out;
 }
 
+.back-btn {
+  position: relative;
+}
+
+.back-btn button{
+  position: absolute;
+  right: 0;
+  bottom: 0.7rem;
+}
+
 /* Backdrop блок */
 .backdrop-wrapper {
   position: relative;
