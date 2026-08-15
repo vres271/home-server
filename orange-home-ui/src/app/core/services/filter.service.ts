@@ -130,4 +130,12 @@ export class FilterService {
       console.error('Failed to load filters from LS', e);
     }
   }
+
+  // Возвращает количество активных значений фильтров
+  getActiveFiltersCount(): number {
+    let count = 0;
+    this.activeFilters.forEach(values => count += values.size);
+    return count;
+  }
+
 }

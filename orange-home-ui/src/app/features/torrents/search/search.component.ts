@@ -59,6 +59,7 @@ export class SearchComponent {
   viewState: 'search' | 'details' = 'search';
   fullMediaDetails: any = null;
   isLoadingDetails = false;
+  isSearched = false;
 
   savedTmdbResults: TmdbSearchResult[] = [];
   savedTmdbQuery: string = '';
@@ -75,6 +76,39 @@ export class SearchComponent {
 
   // ─── Навигация ───────────────────────────────────────────
 
+switchToDirectSearch() {
+    this.showDirectSearch = true;
+    this.viewState = 'search';
+    this.selectedMedia = null;
+    this.fullMediaDetails = null;
+    this.searchQuery = '';
+    this.results = [];
+    this.allJackettResults = [];
+    this.isSearched = false;
+    this.emptyResultsMessage = '';
+    this.cdr.markForCheck();
+  
+    setTimeout(() => {
+      if (this.directSearchBlock) {
+        this.directSearchBlock.nativeElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }
+    }, 0);
+  }
+
+  switchToNormalSearch() {
+    this.showDirectSearch = false;
+    this.viewState = 'search';
+    this.searchQuery = '';
+    this.results = [];
+    this.allJackettResults = [];
+    this.isSearched = false;
+    this.emptyResultsMessage = '';
+    this.cdr.markForCheck();
+  }
+
   onMediaSelected(media: TmdbSearchResult) {
     this.viewState = 'details';
     this.selectedMedia = media;
@@ -82,10 +116,11 @@ export class SearchComponent {
     this.isLoadingDetails = true;
     this.searchLoading = true; 
     
-    // 🔥 2. Сбрасываем все состояния при выборе нового медиа
     this.results = [];
     this.allJackettResults = [];
+    this.isSearched = false;
     this.selectedSeason = 0;
+    this.emptyResultsMessage = '';
     this.cdr.markForCheck();
     
     this.fetchMediaDetailsAndSearchJackett(media);
@@ -97,7 +132,9 @@ export class SearchComponent {
     this.fullMediaDetails = null;
     this.results = [];
     this.allJackettResults = [];
+    this.isSearched = false;
     this.selectedSeason = 0;
+    this.emptyResultsMessage = '';
     this.cdr.markForCheck();
   }
 
@@ -109,6 +146,8 @@ export class SearchComponent {
     this.searchQuery = '';
     this.results = [];
     this.allJackettResults = [];
+    this.isSearched = false;
+
     this.cdr.markForCheck();
   
     setTimeout(() => {
@@ -203,25 +242,34 @@ export class SearchComponent {
   private applyFilters(isDirectSearch: boolean) {
     if (this.searchLoading) {
       this.results = [];
+      this.emptyResultsMessage = '';
       this.cdr.markForCheck();
       return;
     }
 
-    // 🔥 Делегируем фильтрацию сервису
     this.results = this.filterService.applyFilters(
       this.allJackettResults,
       this.selectedSeason
     );
     this.emptyResultsMessage = '';
 
-    // Логика уведомлений
-    if (this.results.length === 0 && !this.searchLoading && !isDirectSearch) {
-      if (this.allJackettResults.length > 0) {
-        this.emptyResultsMessage = `Раздачи не найдены с текущими фильтрами. Попробуйте изменить фильтры или выбрать "Все сезоны".`
+    // 🔥 ГЛАВНОЕ: Если поиск уже был выполнен (isSearched) и результатов 0, 
+    // мы ВСЕГДА формируем сообщение, чтобы блок не исчезал.
+    if (this.isSearched && this.results.length === 0) {
+      const activeCount = this.filterService.getActiveFiltersCount();
+      const hasRaw = this.allJackettResults.length > 0;
+
+      if (hasRaw) {
+        this.emptyResultsMessage = activeCount > 0
+          ? `Найдено ${this.allJackettResults.length} раздач, но они скрыты активными фильтрами (${activeCount} шт.). Попробуйте сбросить их.`
+          : `Раздачи найдены, но не подходят под текущие условия. Попробуйте выбрать "Все сезоны".`;
       } else {
-        this.emptyResultsMessage = `Раздачи по запросу не найдены. Попробуйте прямой поиск.`
+        this.emptyResultsMessage = activeCount > 0
+          ? `По запросу ничего не найдено. Попробуйте сбросить активные фильтры (${activeCount} шт.) или изменить запрос.`
+          : `По вашему запросу ничего не найдено.`;
       }
     }
+    
     this.cdr.markForCheck();
   }
 
@@ -236,24 +284,24 @@ export class SearchComponent {
     this.executeJackettSearch(this.searchQuery, true);
   }
 
+
   private executeJackettSearch(query: string, isDirectSearch = false) {
     this.searchLoading = true;
+    this.isSearched = false; // Сбрасываем до получения ответа
     this.cdr.markForCheck();
 
     this.jackettService.search(query).subscribe({
       next: (res) => {
-        // 1. Сохраняем сырые результаты
         this.allJackettResults = res.Results || [];
-        
-        // 2. 🔥 СНИМАЕМ флаг загрузки ЗДЕСЬ, до вызова фильтрации
+        this.isSearched = true; // 🔥 Поиск завершен, можно показывать блок результатов
         this.searchLoading = false;
         
-        // 3. Применяем фильтр (он увидит, что searchLoading === false, и сработает корректно)
         this.applyFilters(isDirectSearch);
       },
       error: () => {
         this.searchLoading = false;
-        this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось выполнить поиск в Jackett' });
+        this.isSearched = true;
+        this.emptyResultsMessage = 'Не удалось выполнить поиск в Jackett.';
         this.cdr.markForCheck();
       }
     });
@@ -268,7 +316,14 @@ export class SearchComponent {
     this.searchQuery = '';
     this.results = [];
     this.allJackettResults = [];
+    this.isSearched = false;
+    this.emptyResultsMessage = '';
     this.cdr.markForCheck();
+  }
+
+  onFiltersChanged() {
+    // Определяем, в каком мы режиме, чтобы передать правильный флаг (хотя сейчас логика внутри applyFilters унифицирована)
+    this.applyFilters(this.showDirectSearch);
   }
 
   // ─── qBittorrent ─────────────────────────────────────────
@@ -311,10 +366,6 @@ export class SearchComponent {
         }
       }
     });
-  }
-
-  onFiltersChanged() {
-    this.applyFilters(false);
   }
 
 }

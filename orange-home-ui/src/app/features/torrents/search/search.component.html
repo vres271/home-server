@@ -1,37 +1,11 @@
 <p-toast position="bottom-right"></p-toast>
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- РЕЖИМ 1: ПОИСК В TMDB (список фильмов) -->
+<!-- РЕЖИМ 1: ПРЯМОЙ ПОИСК -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
-@if (viewState === 'search') {
-  <app-tmdb-search 
-    [savedResults]="savedTmdbResults"
-    [savedQuery]="savedTmdbQuery"
-    [savedHasSearched]="savedTmdbHasSearched"
-    (mediaSelected)="onMediaSelected($event)"
-    (searchCompleted)="onTmdbSearchCompleted($event)"
-    (requestDirectSearch)="onRequestDirectSearch()">
-  </app-tmdb-search>
-
-  <!-- Разделитель и заголовок для прямого поиска -->
-  @if (showDirectSearch) {
-    <div class="my-4 border-top-1 surface-border pt-4">
-      <div class="flex align-items-center justify-content-between mb-3">
-        <h3 class="text-xl font-bold m-0">Прямой поиск раздач</h3>
-        <p-button 
-          icon="pi pi-times" 
-          severity="secondary" 
-          text="true" 
-          rounded="true" 
-          size="small"
-          (onClick)="closeDirectSearch()"
-          title="Закрыть прямой поиск">
-        </p-button>
-      </div>
-    </div>
-
-    <!-- Поле прямого поиска -->
-    <div #directSearchBlock class="flex flex-column md:flex-row gap-3 mb-4 mt-3">
+@if (showDirectSearch) {
+  <div class="">
+    <div #directSearchBlock class="flex flex-column md:flex-row gap-3 mb-2">
       <p-iconField iconPosition="right" class="w-full md:flex-1">
         <input 
           pInputText 
@@ -50,7 +24,7 @@
       </p-iconField>
       
       <p-button 
-        label="Поиск" 
+        label="Прямой поиск" 
         icon="pi pi-search" 
         severity="warn"
         styleClass="w-full md:w-auto"
@@ -59,64 +33,99 @@
       </p-button>
     </div>
 
-    <!-- Результаты прямого поиска -->
-    <app-torrent-results
-      [results]="results"
-      [loading]="searchLoading"
-      [overlayMode]="true"
-      [hasSearched]="!!searchQuery"
-      (addTorrent)="addTorrent($event)">
-    </app-torrent-results>
+    <!-- Ссылка на обычный поиск -->
+    <div class="flex justify-content-end mb-4">
+      <a href="javascript:void(0)" class="text-sm text-primary hover:underline cursor-pointer flex align-items-center gap-1" (click)="switchToNormalSearch()">
+        <i class="pi pi-search text-xs"></i>
+        Поиск по названию фильма/сериала (TMDB)
+      </a>
+    </div>
+  </div>
+
+  <!-- Блок результатов для прямого поиска -->
+  @if (isSearched || searchLoading) {
+    <div class="mt-4">
+      <app-filter-panel (filtersChanged)="onFiltersChanged()"></app-filter-panel>
+      
+      @if (searchLoading && results.length === 0) {
+        <div class="flex justify-content-center align-items-center py-6">
+          <i class="pi pi-spin pi-spinner text-3xl text-primary mr-3"></i>
+          <span class="text-500">Ищем лучшие раздачи...</span>
+        </div>
+      }
+
+      <app-torrent-results
+        [results]="results"
+        [loading]="searchLoading"
+        [overlayMode]="false"
+        [showEmptyState]="true"
+        [hasSearched]="isSearched"
+        [emptyResultsMessage]="emptyResultsMessage"
+        (addTorrent)="addTorrent($event)">
+      </app-torrent-results>
+    </div>
   }
 }
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- РЕЖИМ 2: ДЕТАЛИ ФИЛЬМА + РЕЗУЛЬТАТЫ JACKETT -->
+<!-- РЕЖИМ 2: ОБЫЧНЫЙ ПОИСК (TMDB) -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
-@if (viewState === 'details' && selectedMedia) {
+@if (!showDirectSearch) {
   
-  <app-media-details
-    [media]="selectedMedia"
-    [fullDetails]="fullMediaDetails"
-    [isLoadingDetails]="isLoadingDetails"
-    [selectedSeason]="selectedSeason"
-    (goBack)="onGoBack()"
-    (seasonSelected)="onSeasonSelected($event)">
-  </app-media-details>
+  <!-- 🔥 2.1. Список результатов поиска TMDB (показываем ТОЛЬКО если фильм еще не выбран) -->
+  @if (viewState === 'search') {
+    <app-tmdb-search 
+      [savedResults]="savedTmdbResults"
+      [savedQuery]="savedTmdbQuery"
+      [savedHasSearched]="savedTmdbHasSearched"
+      (mediaSelected)="onMediaSelected($event)"
+      (searchCompleted)="onTmdbSearchCompleted($event)"
+      (requestDirectSearch)="switchToDirectSearch()">
+    </app-tmdb-search>
+  }
 
-  <div>
-    <h3 class="text-2xl font-bold mb-4 flex align-items-center gap-2">
-      <i class="pi pi-download text-primary"></i>
-      Доступные раздачи
-    </h3>
+  <!-- 🔥 2.2. Детали фильма/сериала и результаты торрентов (показываем ТОЛЬКО если фильм выбран) -->
+  @if (viewState === 'details' && selectedMedia) {
+    <div class="mt-4">
+      <app-media-details
+        [media]="selectedMedia"
+        [fullDetails]="fullMediaDetails"
+        [isLoadingDetails]="isLoadingDetails"
+        [selectedSeason]="selectedSeason"
+        (goBack)="onGoBack()"
+        (seasonSelected)="onSeasonSelected($event)">
+      </app-media-details>
 
-    <!-- Индикатор загрузки торрентов (полноэкранный спиннер) -->
-    @if (searchLoading && results.length === 0) {
-      <div class="flex justify-content-center align-items-center py-6">
-        <i class="pi pi-spin pi-spinner text-3xl text-primary mr-3"></i>
-        <span class="text-500">Ищем лучшие раздачи...</span>
-      </div>
-    }
+      @if (isSearched || searchLoading) {
+        <div class="mt-4">
+          <app-filter-panel (filtersChanged)="onFiltersChanged()"></app-filter-panel>
 
-    @if (!showDirectSearch && selectedSeason > 0 && results.length > 0) {
-      <div class="flex align-items-center gap-2 mb-3 text-sm text-500">
-        <i class="pi pi-filter"></i>
-        Показаны только раздачи для Сезона {{ selectedSeason }}
-      </div>
-    }
+          @if (searchLoading && results.length === 0) {
+            <div class="flex justify-content-center align-items-center py-6">
+              <i class="pi pi-spin pi-spinner text-3xl text-primary mr-3"></i>
+              <span class="text-500">Ищем лучшие раздачи...</span>
+            </div>
+          }
 
-    <app-filter-panel (filtersChanged)="onFiltersChanged()"></app-filter-panel>
+          @if (selectedSeason > 0 && results.length > 0) {
+            <div class="flex align-items-center gap-2 mb-3 text-sm text-500">
+              <i class="pi pi-filter"></i>
+              Показаны только раздачи для Сезона {{ selectedSeason }}
+            </div>
+          }
 
-    <!-- Список найденных торрентов или пустое состояние -->
-    <app-torrent-results
-      [results]="results"
-      [loading]="searchLoading"
-      [overlayMode]="false"
-      [showEmptyState]="true"
-      [hasSearched]="true"
-      [emptyResultsMessage]="emptyResultsMessage"
-      (addTorrent)="addTorrent($event)"
-      (requestDirectSearch)="onRequestDirectSearch()">
-    </app-torrent-results>
-  </div>
+          <app-torrent-results
+            [results]="results"
+            [loading]="searchLoading"
+            [overlayMode]="false"
+            [showEmptyState]="true"
+            [hasSearched]="isSearched"
+            (requestDirectSearch)="switchToDirectSearch()"
+            [emptyResultsMessage]="emptyResultsMessage"
+            (addTorrent)="addTorrent($event)">
+          </app-torrent-results>
+        </div>
+      }
+    </div>
+  }
 }

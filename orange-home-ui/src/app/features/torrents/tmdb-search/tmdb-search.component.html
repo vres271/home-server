@@ -1,5 +1,5 @@
 <!-- Поле поиска -->
-<div class="flex flex-column md:flex-row gap-3 mb-4">
+<div class="flex flex-column md:flex-row gap-3 mb-1">
   
   <p-iconField iconPosition="right" class="w-full md:flex-1">
     <input 
@@ -26,6 +26,17 @@
     (onClick)="search()" 
     [loading]="isLoading">
   </p-button>
+</div>
+
+<!-- 🔥 НОВАЯ ССЫЛКА: Переход к прямому поиску -->
+<div class="flex justify-content-end mb-4">
+  <a 
+    href="javascript:void(0)" 
+    class="text-sm text-primary hover:underline cursor-pointer flex align-items-center gap-1"
+    (click)="requestDirectSearch.emit()">
+    <i class="pi pi-search text-xs"></i>
+    Прямой поиск раздач
+  </a>
 </div>
 
 <!-- Сетка результатов -->
@@ -62,18 +73,5 @@
         </div>
       </div>
     }
-  </div>
-}
-
-<!-- Кнопка прямого поиска -->
-@if (hasSearched && (results.length === 0 || !isLoading)) {
-  <div class="text-center mt-4">
-    <p class="text-500 mb-3">Не нашли то, что искали, или ищете конкретную раздачу?</p>
-    <p-button 
-      label="Перейти к прямому поиску торрентов" 
-      icon="pi pi-external-link" 
-      severity="secondary" 
-      (onClick)="requestDirectSearch.emit()">
-    </p-button>
   </div>
 }
