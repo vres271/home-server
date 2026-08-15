@@ -26,12 +26,14 @@
       [style]="{'height': '6px', 'border-radius': '3px'}">
     </p-progressBar>
 
-    <div class="surface-100 p-3 border-round mb-3 flex-shrink-0">
-      <div class="flex flex-wrap gap-3 text-sm">
+    <div class="surface-100 p-2 border-round mb-2 flex-shrink-0">
+      <div class="flex flex-wrap gap-3 text-sm justify-content-center">
         <span><i class="pi pi-database mr-1"></i> {{ formatSize(torrentInfo.size) }}</span>
         <span><i class="pi pi-chart-line mr-1"></i> {{ (torrentInfo.progress * 100).toFixed(1) }}%</span>
-        <span><i class="pi pi-download mr-1"></i> {{ formatSize(torrentInfo.dlspeed) }}/s</span>
-        <span><i class="pi pi-upload mr-1"></i> {{ formatSize(torrentInfo.upspeed) }}/s</span>
+        <div class="flex gap-3">
+          <span><i class="pi pi-download mr-1"></i> {{ formatSize(torrentInfo.dlspeed) }}/s</span>
+          <span><i class="pi pi-upload mr-1"></i> {{ formatSize(torrentInfo.upspeed) }}/s</span>
+        </div>
         <span><i class="pi pi-users mr-1"></i> {{ torrentInfo.num_seeds }} сидов / {{ torrentInfo.num_leechs }} пиров</span>
       </div>
     </div>
@@ -55,39 +57,6 @@
 
     <!-- Сериал (много файлов) -->
     <div *ngIf="!loading && !isSingleFile" class="flex flex-column flex-1" style="min-height: 0;">
-      
-      <div class="flex flex-column gap-2 mb-3 flex-shrink-0">
-        <div class="flex flex-wrap gap-2">
-          <p-button 
-            [pTooltip]="allSelected ? 'Снять выделение' : 'Выделить всё'"
-            tooltipPosition="top"
-            [icon]="allSelected ? 'pi pi-minus' : 'pi pi-check'"
-            size="small"
-            severity="secondary"
-            (onClick)="toggleSelectAll()">
-          </p-button>
-
-          <p-button pTooltip="Не скачивать" icon="pi pi-ban" size="small" severity="danger"
-            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(0)">
-          </p-button>
-          
-          <p-button pTooltip="Обычный" tooltipPosition="top" icon="pi pi-circle" size="small" severity="secondary"
-            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(1)">
-          </p-button>
-          
-          <p-button pTooltip="Высокий" tooltipPosition="top" icon="pi pi-arrow-up" size="small" severity="warn"
-            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(6)">
-          </p-button>
-          
-          <p-button pTooltip="Максимум" tooltipPosition="top" icon="pi pi-arrow-up" size="small" severity="success"
-            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(7)">
-          </p-button>
-          
-          <p-button pTooltip="Каскадный" tooltipPosition="top" icon="pi pi-sort-amount-down" size="small" severity="info"
-            [disabled]="selectedFiles.size === 0" (onClick)="applyCascadePriority()">
-          </p-button>
-        </div>
-      </div>
 
       <div class="file-list border-1 surface-border border-round flex-1" style="overflow-y: auto; min-height: 0;">
         <div *ngFor="let file of files" 
@@ -117,9 +86,10 @@
             </span>
             
             <span class="text-xs font-medium inline-flex align-items-center gap-1" 
-                  [ngClass]="getPriorityClass(file.priority)">
-              <i [class]="getFileStatusIcon(file)" style="font-size: 0.75rem;"></i>
-              {{ getPriorityLabel(file.priority) }}
+                  [title]="getPriorityLabel(file.priority)">
+              <span class="priority-badge" [ngClass]="getPriorityClass(file.priority)">
+                <i [class]="getFileStatusIcon(file)" style="font-size: 1rem;"></i>
+              </span>
             </span>
           </div>
 
@@ -136,6 +106,40 @@
   </div>
 
   <ng-template pTemplate="footer">
-    <p-button label="Закрыть" icon="pi pi-times" severity="secondary" (onClick)="closeDialog()"></p-button>
+    <div  class="flex flex-column flex-1" style="min-height: 0; align-items: flex-end;">
+      <div *ngIf="!loading && !isSingleFile" class="flex flex-column gap-2 mb-3 flex-shrink-0">
+        <div class="flex flex-wrap gap-2">
+          <p-button 
+            [pTooltip]="allSelected ? 'Снять выделение' : 'Выделить всё'"
+            tooltipPosition="top"
+            [icon]="allSelected ? 'pi pi-minus' : 'pi pi-check'"
+            size="small"
+            severity="secondary"
+            (onClick)="toggleSelectAll()">
+          </p-button>
+
+          <p-button pTooltip="Не скачивать" icon="pi pi-pause" size="small" styleClass="p-button-grey"
+            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(0)">
+          </p-button>
+          
+          <p-button pTooltip="Обычный" tooltipPosition="top" icon="pi pi-arrow-down" size="small" severity="success"
+            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(1)">
+          </p-button>
+          
+          <p-button pTooltip="Высокий" tooltipPosition="top" icon="pi pi-arrow-down" size="small" styleClass="p-button-yellow"
+            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(6)">
+          </p-button>
+          
+          <p-button pTooltip="Максимум" tooltipPosition="top" icon="pi pi-arrow-down" size="small" severity="danger"
+            [disabled]="selectedFiles.size === 0" (onClick)="setPriorityForSelected(7)">
+          </p-button>
+          
+          <p-button pTooltip="Каскадный" tooltipPosition="top" icon="pi pi-sort-amount-down" size="small" severity="info"
+            [disabled]="selectedFiles.size === 0" (onClick)="applyCascadePriority()">
+          </p-button>
+        </div>
+      </div>      
+      <p-button label="Закрыть" icon="pi pi-times" severity="secondary" (onClick)="closeDialog()"></p-button>
+    </div>
   </ng-template>
 </p-dialog>

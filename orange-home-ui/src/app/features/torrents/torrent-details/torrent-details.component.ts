@@ -127,11 +127,11 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
     const fileIds = Array.from(this.selectedFiles);
     this.qbService.setFilePriority(this.torrentInfo.hash, fileIds, priority).subscribe({
       next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Успех',
-          detail: `Приоритет установлен для ${fileIds.length} файл(ов)`
-        });
+        // this.messageService.add({
+        //   severity: 'success',
+        //   summary: 'Успех',
+        //   detail: `Приоритет установлен для ${fileIds.length} файл(ов)`
+        // });
         this.loadFiles();
         this.onTorrentUpdated.emit();
       },
@@ -166,11 +166,11 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
 
     forkJoin(requests).subscribe({
       next: () => {
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Успех',
-          detail: `Каскадный приоритет установлен для ${sortedIds.length} файл(ов)`
-        });
+        // this.messageService.add({
+        //   severity: 'success',
+        //   summary: 'Успех',
+        //   detail: `Каскадный приоритет установлен для ${sortedIds.length} файл(ов)`
+        // });
         this.loadFiles();
         this.onTorrentUpdated.emit();
       },
@@ -238,19 +238,19 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
 
   getPriorityClass(priority: number): string {
     switch (priority) {
-      case 0: return 'text-red-500';
-      case 1: return 'text-500';
-      case 6: return 'text-orange-500';
-      case 7: return 'text-green-600';
+      case 0: return 'text-grey-600';
+      case 1: return 'text-green-600';
+      case 6: return 'text-yellow-500';
+      case 7: return 'text-red-500';
       default: return 'text-500';
     }
   }
 
   getFileStatusIcon(file: TorrentFile): string {
-    if (file.progress === 1) return 'pi pi-check-circle text-green-600';
-    if (file.priority === 0) return 'pi pi-pause-circle text-red-500';
-    if (file.progress > 0) return 'pi pi-spin pi-spinner text-blue-500';
-    return 'pi pi-clock text-500';
+    if (file.progress === 1) return 'pi pi-check-circle';
+    if (file.priority === 0) return 'pi pi-pause-circle';
+    if (file.progress > 0) return 'pi pi-spin pi-spinner';
+    return 'pi pi-clock';
   }
 
   private computeCommonParts() {

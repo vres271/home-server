@@ -10,4 +10,62 @@
 .cursor-pointer {
   -webkit-tap-highlight-color: transparent;
 }
+:host ::ng-deep .p-dialog-content,
+:host ::ng-deep .p-dialog-content,
+:host ::ng-deep .p-dialog-footer {
+  padding: 0.5rem !important;
+}
 
+::ng-deep .p-button-yellow {
+  background-color: #fbbf24 !important;
+  border-color: #fbbf24 !important;
+  color: #000 !important;
+}
+
+::ng-deep .p-button-yellow:hover {
+  background-color: #f59e0b !important;
+  border-color: #f59e0b !important;
+}
+::ng-deep .p-button-grey {
+  background-color: #616161 !important;
+  border-color: #616161 !important;
+}
+
+::ng-deep .p-button-grey:hover {
+  background-color: #3c3c3c !important;
+  border-color: #3c3c3c !important;
+}
+.priority-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: white !important; /* 🔥 Иконка всегда белая */
+}
+
+/* Цвета для разных приоритетов */
+.priority-badge.text-red-500 {
+  background-color: #ef4444;
+}
+
+.priority-badge.text-orange-500 {
+  background-color: #f97316;
+}
+
+.priority-badge.text-yellow-500 {
+  background-color: #eab308;
+}
+
+.priority-badge.text-green-600 {
+  background-color: #16a34a;
+}
+
+.priority-badge.text-grey-600 {
+  background-color: #858585;
+}
+
+.priority-badge.text-500 {
+  background-color: #6b7280;
+}

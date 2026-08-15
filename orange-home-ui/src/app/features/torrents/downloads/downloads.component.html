@@ -28,7 +28,7 @@
 </div>
 
 <div *ngFor="let torrent of activeTorrents" class="torrent-card mb-2 md:mb-3 p-2 md:p-3 border-1 surface-border border-round">
-  <div class="font-bold mb-1 cursor-pointer hover:text-primary-600" (click)="openTorrentDetails(torrent)">
+  <div class="font-bold mb-1 torrent-name cursor-pointer hover:text-primary-600" (click)="openTorrentDetails(torrent)">
     {{ torrent.name }}
   </div>
   

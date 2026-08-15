@@ -5,6 +5,11 @@
 .torrent-card:hover {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
+.torrent-name {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-all; 
+}
 :host ::ng-deep .h-0-5rem {
   height: 0.5rem !important;
 }
