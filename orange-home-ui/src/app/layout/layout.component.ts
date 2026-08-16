@@ -1,9 +1,10 @@
-import { Component, ChangeDetectionStrategy, ChangeDetectorRef, inject } from '@angular/core';
+import { Component, ChangeDetectionStrategy, ChangeDetectorRef, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { ToolbarModule } from 'primeng/toolbar';
 import { ButtonModule } from 'primeng/button';
 import { SidebarModule } from 'primeng/sidebar';
+import { ThemeService } from '../core/services/theme.service';
 
 @Component({
   selector: 'app-layout',
@@ -18,15 +19,24 @@ import { SidebarModule } from 'primeng/sidebar';
 })
 export class LayoutComponent {
   private cdr = inject(ChangeDetectorRef);
+  private themeService = inject(ThemeService);
 
   isMobileMenuOpen = false;
 
-  // Неизменяемый массив — мутировать не планируем
   readonly menuItems = [
     { label: 'Главная', icon: 'pi pi-home', routerLink: ['/dashboard'] },
     { label: 'Торренты', icon: 'pi pi-download', routerLink: ['/torrents'] },
     { label: 'Настройки', icon: 'pi pi-cog', routerLink: ['/settings'] }
   ];
+
+  // Signal с текущей темой
+  theme = this.themeService.theme;
+
+  // Вычисляемое свойство для иконки
+  themeIcon = computed(() => this.theme() === 'dark' ? 'pi pi-sun' : 'pi pi-moon');
+
+  // Вычисляемое свойство для подписи
+  themeLabel = computed(() => this.theme() === 'dark' ? 'Светлая тема' : 'Тёмная тема');
 
   toggleMobileMenu() {
     this.isMobileMenuOpen = !this.isMobileMenuOpen;
@@ -38,9 +48,13 @@ export class LayoutComponent {
     this.cdr.markForCheck();
   }
 
-  // 🔥 Обработчик закрытия через X/backdrop
   onSidebarVisibleChange(visible: boolean) {
     this.isMobileMenuOpen = visible;
     this.cdr.markForCheck();
+  }
+
+  toggleTheme() {
+    this.themeService.toggle();
+    this.closeMobileMenu();
   }
 }

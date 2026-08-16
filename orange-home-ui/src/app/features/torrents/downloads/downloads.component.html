@@ -1,7 +1,7 @@
 <p-toast position="bottom-right"></p-toast>
 
-<div class="flex justify-content-end mb-2" style="margin-top: -44px;">
-  <div class="flex align-items-center gap-3">
+<div class="flex justify-content-end mb-2" style="position: relative;">
+  <div class="flex align-items-center gap-3" style="position: absolute; bottom: 20px;">
     
     <span class="text-sm inline-flex align-items-center gap-1">
       <span class="text-500">{{ formatSize(freeSpace) }}</span>
@@ -28,7 +28,7 @@
 </div>
 
 <div *ngFor="let torrent of activeTorrents" class="torrent-card mb-2 md:mb-3 p-2 md:p-3 border-1 surface-border border-round">
-  <div class="font-bold mb-1 torrent-name cursor-pointer hover:text-primary-600" (click)="openTorrentDetails(torrent)">
+  <div class="mb-1 torrent-name cursor-pointer hover:text-primary-600" (click)="openTorrentDetails(torrent)">
     {{ torrent.name }}
   </div>
   

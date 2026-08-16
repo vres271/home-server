@@ -4,45 +4,67 @@
     <div class="logo">
       <span>Hub</span>
     </div>
-    
-    <ul class="layout-menu">
-      <li *ngFor="let item of menuItems">
-        <a [routerLink]="item.routerLink" 
-           routerLinkActive="active-menu-item">
-          <i [class]="item.icon"></i>
-          <span>{{ item.label }}</span>
-        </a>
-      </li>
-    </ul>
+
+    <!-- ✅ Общий враппер растягивается на всю высоту -->
+    <div class="menu-wrapper">
+      <ul class="layout-menu">
+        <li *ngFor="let item of menuItems">
+          <a [routerLink]="item.routerLink" routerLinkActive="active-menu-item">
+            <i [class]="item.icon"></i>
+            <span>{{ item.label }}</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- ✅ Прижимается к низу через margin-top: auto -->
+      <ul class="layout-menu layout-menu-bottom">
+        <li>
+          <a (click)="toggleTheme()" role="button" class="theme-toggle">
+            <i [class]="themeIcon()"></i>
+            <span>{{ themeLabel() }}</span>
+          </a>
+        </li>
+      </ul>
+    </div>
   </aside>
 
   <!-- Боковое меню (мобильное) -->
-  <p-sidebar 
+  <p-sidebar
     [visible]="isMobileMenuOpen"
     (visibleChange)="onSidebarVisibleChange($event)"
-    position="left" 
+    position="left"
     styleClass="mobile-sidebar">
     <ng-template pTemplate="header">
       <div class="logo">
         <span>Hub</span>
       </div>
     </ng-template>
-    
-    <ul class="layout-menu">
-      <li *ngFor="let item of menuItems">
-        <a [routerLink]="item.routerLink" 
-           routerLinkActive="active-menu-item"
-           (click)="closeMobileMenu()">
-          <i [class]="item.icon"></i>
-          <span>{{ item.label }}</span>
-        </a>
-      </li>
-    </ul>
+
+    <div class="menu-wrapper">
+      <ul class="layout-menu">
+        <li *ngFor="let item of menuItems">
+          <a [routerLink]="item.routerLink"
+             routerLinkActive="active-menu-item"
+             (click)="closeMobileMenu()">
+            <i [class]="item.icon"></i>
+            <span>{{ item.label }}</span>
+          </a>
+        </li>
+      </ul>
+
+      <ul class="layout-menu layout-menu-bottom">
+        <li>
+          <a (click)="toggleTheme()" role="button" class="theme-toggle">
+            <i [class]="themeIcon()"></i>
+            <span>{{ themeLabel() }}</span>
+          </a>
+        </li>
+      </ul>
+    </div>
   </p-sidebar>
 
   <!-- Основной контент -->
   <main class="layout-main">
-    <!-- Верхняя панель -->
     <p-toolbar styleClass="mb-2 md:mb-3">
       <div class="p-toolbar-group-start align-items-center">
         <button pButton icon="pi pi-bars" class="p-button-text p-button-rounded mobile-menu-btn" (click)="toggleMobileMenu()"></button>
@@ -54,7 +76,6 @@
       </div>
     </p-toolbar>
 
-    <!-- Контент разделов -->
     <div class="content-container">
       <router-outlet></router-outlet>
     </div>

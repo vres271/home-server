@@ -1,6 +1,10 @@
 .layout-wrapper {
   display: flex;
   height: 100vh;
+  max-width: 1440px;
+  margin: 0 auto;
+  box-shadow: 0 0 24px rgba(0, 0, 0, 0.06);
+  background-color: var(--surface-500);
 }
 
 /* Десктопное меню */
@@ -21,6 +25,7 @@
   border-bottom: 1px solid var(--surface-border);
   display: flex;
   align-items: center;
+  flex-shrink: 0; /* ✅ логотип не сжимается */
 }
 
 .logo-img {
@@ -31,10 +36,26 @@
   margin-bottom: 0.4rem;
 }
 
+/* ✅ КЛЮЧЕВОЕ: враппер растягивается на всю оставшуюся высоту */
+.menu-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto; /* если меню не влезает — скролл */
+  height: 100%;
+}
+
 .layout-menu {
   list-style: none;
   padding: 1rem 0;
   margin: 0;
+}
+
+/* ✅ КЛЮЧЕВОЕ: прижимает блок с темой к низу */
+.layout-menu-bottom {
+  margin-top: auto;
+  padding-top: 0;
+  border-top: 1px solid var(--surface-border);
 }
 
 .layout-menu li a {
@@ -44,6 +65,7 @@
   color: var(--text-color);
   text-decoration: none;
   transition: background-color 0.2s;
+  cursor: pointer;
 }
 
 .layout-menu li a i {
@@ -61,6 +83,10 @@
   font-weight: 600;
 }
 
+.theme-toggle {
+  font-weight: 500;
+}
+
 .layout-main {
   flex: 1;
   display: flex;
@@ -73,34 +99,46 @@
   overflow-y: auto;
 }
 
-/* Кнопка гамбургер - скрыта на десктопе */
 .mobile-menu-btn {
   display: none;
 }
 
-/* === МОБИЛЬНАЯ АДАПТАЦИЯ (до 768px) === */
+/* === МОБИЛЬНАЯ АДАПТАЦИЯ === */
 @media (max-width: 768px) {
-  /* Скрываем десктопное меню */
   .layout-sidebar.desktop-only {
     display: none;
   }
-
-  /* Показываем кнопку гамбургер */
   .mobile-menu-btn {
     display: inline-flex;
   }
 }
 
-/* Стили для мобильного sidebar */
+/* === МОБИЛЬНЫЙ SIDEBAR (p-sidebar) === */
 :host ::ng-deep .mobile-sidebar {
   width: 250px !important;
+  display: flex;
+  flex-direction: column;
 }
 
 :host ::ng-deep .mobile-sidebar .p-sidebar-header {
   padding: 0;
   border-bottom: 1px solid var(--surface-border);
+  flex-shrink: 0;
 }
 
 :host ::ng-deep .mobile-sidebar .p-sidebar-content {
   padding: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
+
+/* ✅ Враппер внутри p-sidebar тоже растягивается */
+:host ::ng-deep .mobile-sidebar .menu-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+}
+
