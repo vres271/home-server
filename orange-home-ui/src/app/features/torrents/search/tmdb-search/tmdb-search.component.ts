@@ -6,8 +6,8 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { ButtonModule } from 'primeng/button';
 import { MessageService } from 'primeng/api';
-import { TmdbService } from '../../../core/services/tmdb.service';
-import { TmdbSearchResult } from '../../../core/models/tmdb.model';
+import { TmdbService } from '../../../../core/services/tmdb.service';
+import { TmdbSearchResult } from '../../../../core/models/tmdb.model';
 
 @Component({
   selector: 'app-tmdb-search',

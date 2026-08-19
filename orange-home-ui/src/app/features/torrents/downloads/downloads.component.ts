@@ -11,7 +11,7 @@ import { takeUntil } from 'rxjs/operators';
 
 import { QBittorrentService } from '../../../core/services/qbittorrent.service';
 import { TorrentInfo } from '../../../core/models/qbittorrent.model';
-import { TorrentDetailsComponent } from '../torrent-details/torrent-details.component';
+import { TorrentDetailsComponent } from './torrent-details/torrent-details.component';
 
 @Component({
   selector: 'app-torrent-downloads',

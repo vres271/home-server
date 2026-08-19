@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
-import { JackettResult } from '../../../core/models/jackett.model';
+import { JackettResult } from '../../../../core/models/jackett.model';
 
 @Component({
   selector: 'app-torrent-results',

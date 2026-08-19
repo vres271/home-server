@@ -2,8 +2,8 @@ import { Component, EventEmitter, Input, Output, inject, ChangeDetectionStrategy
 import { CommonModule } from '@angular/common';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
-import { TmdbSearchResult } from '../../../core/models/tmdb.model';
-import { TmdbService } from '../../../core/services/tmdb.service';
+import { TmdbSearchResult } from '../../../../core/models/tmdb.model';
+import { TmdbService } from '../../../../core/services/tmdb.service';
 import { SeasonSelectorComponent } from './season-selector/season-selector.component';
 import { EpisodeListComponent } from './episode-list/episode-list.component';
 

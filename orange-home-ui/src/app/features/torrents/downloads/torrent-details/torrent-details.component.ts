@@ -11,8 +11,8 @@ import { interval, Subject, forkJoin } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { FormsModule } from '@angular/forms';
 
-import { QBittorrentService } from '../../../core/services/qbittorrent.service';
-import { TorrentFile, TorrentInfo } from '../../../core/models/qbittorrent.model';
+import { QBittorrentService } from '../../../../core/services/qbittorrent.service';
+import { TorrentFile, TorrentInfo } from '../../../../core/models/qbittorrent.model';
 import { PieceMapComponent } from "./piece-map/piece-map.component";
 
 @Component({

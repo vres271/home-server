@@ -14,11 +14,11 @@ import { JackettService } from '../../../core/services/jackett.service';
 import { QBittorrentService } from '../../../core/services/qbittorrent.service';
 import { JackettResult } from '../../../core/models/jackett.model';
 import { TmdbSearchResult } from '../../../core/models/tmdb.model';
-import { TmdbSearchComponent } from '../tmdb-search/tmdb-search.component';
-import { MediaDetailsComponent } from '../media-details/media-details.component';
-import { TorrentResultsComponent } from '../torrent-results/torrent-results.component';
+import { MediaDetailsComponent } from './media-details/media-details.component';
+import { TorrentResultsComponent } from './torrent-results/torrent-results.component';
 import { FilterService } from '../../../core/services/filter.service';
-import { FilterPanelComponent } from "../filter-panel/filter-panel.component";
+import { TmdbSearchComponent } from './tmdb-search/tmdb-search.component';
+import { FilterPanelComponent } from './filter-panel/filter-panel.component';
 
 @Component({
   selector: 'app-torrent-search',

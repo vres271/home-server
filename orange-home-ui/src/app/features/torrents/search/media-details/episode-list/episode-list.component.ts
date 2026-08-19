@@ -2,7 +2,7 @@ import { Component, Input, ChangeDetectionStrategy, inject, Output, EventEmitter
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { TmdbService } from '../../../../core/services/tmdb.service';
+import { TmdbService } from '../../../../../core/services/tmdb.service';
 
 @Component({
   selector: 'app-episode-list',

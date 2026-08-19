@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { TooltipModule } from 'primeng/tooltip';
 import { interval, Subject, startWith } from 'rxjs';
 import { switchMap, takeUntil } from 'rxjs/operators';
-import { QBittorrentService } from '../../../../core/services/qbittorrent.service';
+import { QBittorrentService } from '../../../../../core/services/qbittorrent.service';
 
 @Component({
   selector: 'app-piece-map',

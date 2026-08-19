@@ -2,8 +2,8 @@ import { Component, Input, Output, EventEmitter, ChangeDetectionStrategy, Change
 import { CommonModule } from '@angular/common'; // Убедись, что CommonModule импортирован (нужен для date pipe)
 import { FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
-import { TmdbSeason } from '../../../../core/models/tmdb.model';
-import { TmdbService } from '../../../../core/services/tmdb.service';
+import { TmdbSeason } from '../../../../../core/models/tmdb.model';
+import { TmdbService } from '../../../../../core/services/tmdb.service';
 
 @Component({
   selector: 'app-season-selector',

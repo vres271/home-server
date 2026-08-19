@@ -1,7 +1,7 @@
 import { CommonModule } from "@angular/common";
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, inject, Output } from "@angular/core";
 import { ButtonModule } from "primeng/button";
-import { FilterService } from "../../../core/services/filter.service";
+import { FilterService } from "../../../../core/services/filter.service";
 
 @Component({
   selector: 'app-filter-panel',
