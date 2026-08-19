@@ -11,7 +11,7 @@
   <ng-template pTemplate="header">
     <div class="flex align-items-center gap-2">
       <i class="pi pi-info-circle text-xl flex-shrink-0"></i>
-      <span class="font-bold text-lg break-all" style="word-break: break-word; line-height: 1.3;">
+      <span class="font-bold text-lg break-all" style="word-break: break-all; line-height: 1.3;">
         {{ torrentInfo.name }}
       </span>
     </div>
@@ -22,7 +22,7 @@
     <p-progressBar 
       [value]="torrentInfo.progress * 100" 
       [showValue]="false" 
-      styleClass="flex-1 mb-3"
+      styleClass="flex-1 mb-2"
       [style]="{'height': '6px', 'border-radius': '3px'}">
     </p-progressBar>
 
@@ -39,7 +39,7 @@
     </div>
 
     <!-- Загрузка -->
-    <div *ngIf="loading && files.length === 0" class="text-center p-4 flex-1 flex align-items-center justify-content-center">
+    <div *ngIf="loading && files.length === 0" class="text-center flex-1 flex align-items-center justify-content-center">
       <div>
         <i class="pi pi-spin pi-spinner" style="font-size: 2rem"></i>
         <p class="mt-2">Загрузка списка файлов...</p>
@@ -47,11 +47,29 @@
     </div>
 
     <!-- Фильм (1 файл) -->
-    <div *ngIf="!loading && isSingleFile" class="text-center p-4 flex-1 flex align-items-center justify-content-center">
-      <div>
-        <i class="pi pi-file text-4xl text-500 mb-2"></i>
-        <p class="text-lg font-bold">{{ files[0].name }}</p>
-        <p class="text-500">{{ formatSize(files[0].size) }} • {{ (files[0].progress * 100).toFixed(1) }}%</p>
+    <div *ngIf="!loading && isSingleFile" class="flex-1 flex flex-column">
+      <div class="flex-1 flex flex-column">
+
+        <!-- КАРТА КУСКОВ (Матрица) в резиновом контейнере -->
+        <!-- Компонент сам покажет спиннер, если грузится -->
+        <div *ngIf="files[0].piece_range" class="piece-map-height-container">
+          <app-piece-map 
+            [hash]="torrentInfo.hash"
+            [pieceRange]="files[0].piece_range"
+            [startPieceIndex]="files[0].piece_range[0]">
+          </app-piece-map>
+        </div>
+
+        <!-- Fallback, если по какой-то причине piece_range недоступен -->
+        <div *ngIf="!files[0].piece_range" class="flex-1 flex flex-column justify-content-center">
+          <p-progressBar
+            [value]="files[0].progress * 100" 
+            [showValue]="false" 
+            [style]="{'height': '8px', 'border-radius': '4px'}">
+          </p-progressBar>
+          <p class="text-center text-sm text-500 mt-2">Детальная карта кусков недоступна для этого торрента</p>
+        </div>
+
       </div>
     </div>
 
@@ -74,7 +92,7 @@
             </div>
             
             <div class="text-sm font-medium mb-1 break-all flex-1" 
-                style="word-break: break-word; line-height: 1.25;"
+                style="word-break: break-all; line-height: 1.25;"
                 [pTooltip]="file.name"
                 tooltipPosition="top">
               {{ getShortFileName(file.name) }}

@@ -134,4 +134,16 @@ export class QBittorrentService {
     );
   }
 
+  getPieceStates(hash: string): Observable<number[]> {
+    return this.http.get<number[]>(`${this.apiBase}/torrents/pieceStates`, {
+      params: { hash }
+    });
+  }
+
+  getTorrentProperties(hash: string): Observable<{ piece_size: number; [key: string]: any }> {
+    return this.http.get<any>(`${this.apiBase}/torrents/properties`, {
+      params: { hash }
+    });
+  }  
+
 }

@@ -1,0 +1,92 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.piece-map-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface-0);
+  border: 1px solid var(--surface-border);
+  border-radius: 8px;
+}
+
+.piece-map-grid {
+  flex: 0 1 auto; /* Не растягивается по вертикали */
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8px, 1fr));
+  grid-auto-rows: min-content; /* Фиксированная высота строк */
+  gap: 1px;
+  background: var(--surface-400);
+  padding: 1px;
+  border-radius: 4px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  align-content: start; /* Квадраты идут плотно сверху */
+  
+  /* Кастомизация скроллбара */
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-400) transparent;
+}
+
+.piece-map-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.piece-map-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.piece-map-grid::-webkit-scrollbar-thumb { 
+  background-color: var(--surface-400);
+  border-radius: 4px;
+}
+
+.piece-map-grid::-webkit-scrollbar-thumb:hover {
+  background-color: var(--surface-500);
+}
+
+.piece-cell {
+  aspect-ratio: 1;
+  border-radius: 1px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  cursor: default;
+}
+
+.piece-map-legend {
+  flex-shrink: 0;
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--surface-border);
+}
+
+.legend-box {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+::ng-deep .piece-tooltip {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+}
+
+.bg-grey-piece {
+    background-color: rgba(128, 128, 128, .2)
+}
+
+.piece-cell--loading {
+  animation: piece-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes piece-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}

@@ -10,7 +10,7 @@
 .cursor-pointer {
   -webkit-tap-highlight-color: transparent;
 }
-:host ::ng-deep .p-dialog-content,
+:host ::ng-deep .p-dialog-header,
 :host ::ng-deep .p-dialog-content,
 :host ::ng-deep .p-dialog-footer {
   padding: 0.5rem !important;
@@ -68,4 +68,8 @@
 
 .priority-badge.text-500 {
   background-color: #6b7280;
+}
+
+.piece-map-height-container {
+  height: 250px;
 }

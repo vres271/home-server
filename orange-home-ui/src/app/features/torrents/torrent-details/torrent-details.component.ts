@@ -13,6 +13,7 @@ import { FormsModule } from '@angular/forms';
 
 import { QBittorrentService } from '../../../core/services/qbittorrent.service';
 import { TorrentFile, TorrentInfo } from '../../../core/models/qbittorrent.model';
+import { PieceMapComponent } from "./piece-map/piece-map.component";
 
 @Component({
   selector: 'app-torrent-details',
@@ -20,8 +21,9 @@ import { TorrentFile, TorrentInfo } from '../../../core/models/qbittorrent.model
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule, DialogModule, ButtonModule, CheckboxModule,
-    ProgressBarModule, TooltipModule, ToastModule, FormsModule
-  ],
+    ProgressBarModule, TooltipModule, ToastModule, FormsModule,
+    PieceMapComponent
+],
   providers: [MessageService],
   templateUrl: './torrent-details.component.html',
   styleUrls: ['./torrent-details.component.css']
@@ -127,11 +129,6 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
     const fileIds = Array.from(this.selectedFiles);
     this.qbService.setFilePriority(this.torrentInfo.hash, fileIds, priority).subscribe({
       next: () => {
-        // this.messageService.add({
-        //   severity: 'success',
-        //   summary: 'Успех',
-        //   detail: `Приоритет установлен для ${fileIds.length} файл(ов)`
-        // });
         this.loadFiles();
         this.onTorrentUpdated.emit();
       },
@@ -166,11 +163,6 @@ export class TorrentDetailsComponent implements OnInit, OnDestroy {
 
     forkJoin(requests).subscribe({
       next: () => {
-        // this.messageService.add({
-        //   severity: 'success',
-        //   summary: 'Успех',
-        //   detail: `Каскадный приоритет установлен для ${sortedIds.length} файл(ов)`
-        // });
         this.loadFiles();
         this.onTorrentUpdated.emit();
       },

@@ -32,6 +32,6 @@ export interface TorrentFile {
   progress: number;
   priority: number; // 0=не качать, 1=обычный, 6=высокий, 7=максимум
   is_seed: boolean;
-  piece_range?: number[];
+  piece_range?: [number, number];
   availability?: number;
 }

@@ -1,0 +1,31 @@
+<div class="piece-map-container">
+  
+  <!-- Индикатор загрузки внутри компонента -->
+  <div *ngIf="isFetchingPieces()" class="flex justify-content-center align-items-center gap-2">
+    <i class="pi pi-spin pi-spinner text-500"></i>
+    <span class="text-sm text-500">Загрузка карты...</span>
+  </div>
+
+  <!-- Сетка кусков -->
+  <div *ngIf="!isFetchingPieces()" class="piece-map-grid">
+    @for (state of visibleStates(); track $index) {
+      <div 
+        class="piece-cell" 
+        [ngClass]="getStateClass(state)">
+      </div>
+    }
+  </div>
+
+  <!-- Легенда -->
+  <div class="piece-map-legend flex gap-3 text-xs text-500 justify-content-center">
+    <span class="flex align-items-center gap-1">
+      <span class="legend-box bg-grey-piece"></span> Не скачан
+    </span>
+    <span class="flex align-items-center gap-1">
+      <span class="legend-box bg-yellow-400 legend-box--loading"></span> Качается
+    </span>
+    <span class="flex align-items-center gap-1">
+      <span class="legend-box bg-green-500"></span> Скачан
+    </span>
+  </div>
+</div>
