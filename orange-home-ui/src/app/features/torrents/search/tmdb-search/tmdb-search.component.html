@@ -1,42 +1,31 @@
 <!-- Поле поиска -->
-@if (!showAdvanced) {
-  <div class="flex flex-column md:flex-row gap-3 mb-1">
+<div class="flex flex-column md:flex-row gap-3 mb-1">
+  <p-iconField iconPosition="right" class="w-full md:flex-1">
+    <input 
+      pInputText 
+      type="text" 
+      [ngModel]="searchQuery"
+      (ngModelChange)="onSearchQueryChange($event)"
+      placeholder="Название фильма или сериала..." 
+      class="w-full"
+      (keydown.enter)="search()"
+    />
     
-    <p-iconField iconPosition="right" class="w-full md:flex-1">
-      <input 
-        pInputText 
-        type="text" 
-        [ngModel]="searchQuery"
-        (ngModelChange)="onSearchQueryChange($event)"
-        placeholder="Название фильма или сериала..." 
-        class="w-full"
-        (keydown.enter)="search()"
-      />
-      
-      @if (searchQuery) {
-        <p-inputIcon styleClass="cursor-pointer" (click)="clearSearch()">
-          <i class="pi pi-times"></i>
-        </p-inputIcon>
-      }
-    </p-iconField>
-    
-    <p-button 
-      label="Поиск" 
-      icon="pi pi-search" 
-      styleClass="w-full md:w-auto"
-      (onClick)="search()" 
-      [loading]="isLoading">
-    </p-button>
-  </div>
-}
-
-<!-- 🔥 Панель расширенного поиска -->
-@if (showAdvanced) {
-  <app-advanced-search
-    (search)="onAdvancedSearch($event)"
-    (close)="showAdvanced = false">
-  </app-advanced-search>
-}
+    @if (searchQuery) {
+      <p-inputIcon styleClass="cursor-pointer" (click)="clearSearch()">
+        <i class="pi pi-times"></i>
+      </p-inputIcon>
+    }
+  </p-iconField>
+  
+  <p-button 
+    label="Поиск" 
+    icon="pi pi-search" 
+    styleClass="w-full md:w-auto"
+    (onClick)="search()" 
+    [loading]="isLoading">
+  </p-button>
+</div>
 
 <!-- 🔗 Ссылки: Расширенный поиск + Прямой поиск раздач -->
 <div class="flex justify-content-end gap-3 mb-3">
@@ -51,13 +40,22 @@
 
   <span class="text-300">·</span>
 
-  <a href="javascript:void(0)"
-     class="text-sm text-primary hover:underline cursor-pointer flex align-items-center gap-1"
-     (click)="requestDirectSearch.emit()">
+  <a 
+    href="javascript:void(0)" 
+    class="text-sm text-primary hover:underline cursor-pointer flex align-items-center gap-1"
+    (click)="requestDirectSearch.emit()">
     <i class="pi pi-search text-xs"></i>
     Прямой поиск раздач
   </a>
 </div>
+
+<!-- 🔥 Панель расширенного поиска -->
+@if (showAdvanced) {
+  <app-advanced-search
+    (search)="onAdvancedSearch($event)"
+    (close)="showAdvanced = false">
+  </app-advanced-search>
+}
 
 <!-- Сетка результатов -->
 @if (hasSearched && !isLoading && results.length > 0) {
@@ -94,4 +92,23 @@
       </div>
     }
   </div>
+
+  <!-- 🔥 Sentinel ВСЕГДА в DOM, не внутри @if -->
+  <div #sentinel class="sentinel flex justify-content-center py-4">
+    @if (isLoadingNextPage) {
+      <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
+    }
+  </div>
+}
+
+<!-- Кнопка "Наверх" -->
+@if (showScrollToTop) {
+  <button 
+    pButton 
+    type="button" 
+    icon="pi pi-arrow-up" 
+    class="p-button-rounded p-button-primary scroll-to-top-btn"
+    (click)="scrollToTop()"
+    pTooltip="Наверх">
+  </button>
 }

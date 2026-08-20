@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Input, Output, SimpleChanges, inject, ChangeDetectionStrategy, ChangeDetectorRef } from '@angular/core';
+import { Component, EventEmitter, Input, Output, SimpleChanges, inject, ChangeDetectionStrategy, ChangeDetectorRef, HostListener, ViewChild, ElementRef, OnDestroy, AfterViewChecked, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { InputTextModule } from 'primeng/inputtext';
@@ -9,6 +9,15 @@ import { MessageService } from 'primeng/api';
 import { TmdbService } from '../../../../core/services/tmdb.service';
 import { DiscoverParams, TmdbSearchResult } from '../../../../core/models/tmdb.model';
 import { AdvancedSearchComponent } from './advanced-search/advanced-search.component';
+import { fromEvent, Subscription, throttleTime } from 'rxjs';
+
+type SearchType = 'multi' | 'discover';
+
+interface SearchState {
+  type: SearchType;
+  query?: string;
+  discoverParams?: DiscoverParams;
+}
 
 @Component({
   selector: 'app-tmdb-search',
@@ -22,10 +31,13 @@ import { AdvancedSearchComponent } from './advanced-search/advanced-search.compo
   templateUrl: './tmdb-search.component.html',
   styleUrls: ['./tmdb-search.component.css']
 })
-export class TmdbSearchComponent {
+export class TmdbSearchComponent implements AfterViewChecked, AfterViewInit, OnDestroy{
   private tmdbService = inject(TmdbService);
   private messageService = inject(MessageService);
   private cdr = inject(ChangeDetectorRef);
+
+  @ViewChild('sentinel') sentinel!: ElementRef<HTMLDivElement>;
+  private lastSentinelEl: HTMLDivElement | null = null;
 
   @Output() mediaSelected = new EventEmitter<TmdbSearchResult>();
   @Output() requestDirectSearch = new EventEmitter<void>();
@@ -40,6 +52,80 @@ export class TmdbSearchComponent {
   isLoading = false;
   hasSearched = false;
   showAdvanced = false;
+
+  // Пагинация
+  private currentPage = 1;
+  private totalPages = 1;
+  isLoadingNextPage = false;
+  private lastSearchState: SearchState | null = null;
+  private observer: IntersectionObserver | null = null;
+
+  // Кнопка "Наверх"
+  showScrollToTop = false;
+  private scrollSubscription: Subscription | null = null;
+  private scrollContainer: HTMLElement | null = null;
+
+  ngAfterViewChecked(): void {
+    const currentEl = this.sentinel?.nativeElement || null;
+    if (currentEl !== this.lastSentinelEl) {
+      this.lastSentinelEl = currentEl;
+      this.setupIntersectionObserver();
+    }
+  }
+
+  ngAfterViewInit(): void {
+    // Находим контейнер, на котором происходит скролл
+    this.scrollContainer = document.querySelector('.content-container');
+    
+    if (this.scrollContainer) {
+      this.scrollSubscription = fromEvent(this.scrollContainer, 'scroll')
+        .pipe(throttleTime(100)) // ограничиваем частоту до 10 раз в секунду
+        .subscribe(() => {
+          const scrollPosition = this.scrollContainer!.scrollTop;
+          this.showScrollToTop = scrollPosition > 1000;
+          this.cdr.markForCheck();
+        });
+    }
+  }
+
+  ngOnDestroy(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+    if (this.scrollSubscription) {
+      this.scrollSubscription.unsubscribe();
+    }
+  }
+
+  private setupIntersectionObserver(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+      this.observer = null;
+    }
+
+    if (!this.sentinel?.nativeElement) {
+      return;
+    }
+
+    this.observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !this.isLoadingNextPage && this.hasMorePages()) {
+          this.loadNextPage();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    this.observer.observe(this.sentinel.nativeElement);
+  }
+
+  scrollToTop(): void {
+    if (this.scrollContainer) {
+      this.scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['savedResults'] && this.savedResults.length > 0) {
@@ -57,14 +143,18 @@ export class TmdbSearchComponent {
 
   search(): void {
     if (!this.searchQuery.trim()) return;
+    
     this.isLoading = true;
     this.hasSearched = true;
     this.results = [];
+    this.currentPage = 1;
+    this.lastSearchState = { type: 'multi', query: this.searchQuery };
     this.cdr.markForCheck();
 
-    this.tmdbService.searchMulti(this.searchQuery).subscribe({
+    this.tmdbService.searchMulti(this.searchQuery, 1).subscribe({
       next: (response) => {
         this.results = response.results || [];
+        this.totalPages = response.total_pages;
         this.isLoading = false;
 
         this.searchCompleted.emit({
@@ -94,6 +184,8 @@ export class TmdbSearchComponent {
     this.searchQuery = '';
     this.results = [];
     this.hasSearched = false;
+    this.currentPage = 1;
+    this.lastSearchState = null;
     this.cdr.markForCheck();
 
     this.searchCompleted.emit({
@@ -129,14 +221,16 @@ export class TmdbSearchComponent {
     this.isLoading = true;
     this.hasSearched = true;
     this.results = [];
+    this.currentPage = 1;
+    this.lastSearchState = { type: 'discover', discoverParams: params };
     this.cdr.markForCheck();
 
-    this.tmdbService.discover(params).subscribe({
+    this.tmdbService.discover({ ...params, page: 1 }).subscribe({
       next: (response) => {
         this.results = response.results || [];
+        this.totalPages = response.total_pages;
         this.isLoading = false;
 
-        // Сохраняем состояние — query формируем из параметров для отображения
         const queryLabel = this.buildDiscoverLabel(params);
         this.searchCompleted.emit({
           results: this.results,
@@ -163,6 +257,43 @@ export class TmdbSearchComponent {
         this.cdr.markForCheck();
       }
     });
+  }
+
+  private loadNextPage(): void {
+    if (!this.lastSearchState || this.isLoadingNextPage || !this.hasMorePages()) return;
+
+    this.isLoadingNextPage = true;
+    this.currentPage++;
+    this.cdr.markForCheck();
+
+    const nextPage = this.currentPage;
+    const state = this.lastSearchState;
+
+    const request$ = state.type === 'multi'
+      ? this.tmdbService.searchMulti(state.query!, nextPage)
+      : this.tmdbService.discover({ ...state.discoverParams!, page: nextPage });
+
+    request$.subscribe({
+      next: (response) => {
+        this.results = [...this.results, ...(response.results || [])];
+        this.isLoadingNextPage = false;
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Ошибка',
+          detail: 'Не удалось загрузить следующую страницу'
+        });
+        this.isLoadingNextPage = false;
+        this.currentPage--; // Откатываем страницу при ошибке
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  hasMorePages(): boolean {
+    return this.currentPage < this.totalPages;
   }
 
   private buildDiscoverLabel(p: DiscoverParams): string {

@@ -74,6 +74,8 @@ export class SearchComponent {
   allJackettResults: JackettResult[] = [];
   selectedSeason: number = 0;
 
+  private savedScrollPosition = 0;
+
   // ─── Навигация ───────────────────────────────────────────
 
 switchToDirectSearch() {
@@ -110,6 +112,11 @@ switchToDirectSearch() {
   }
 
   onMediaSelected(media: TmdbSearchResult) {
+    // 1. Сохраняем текущую позицию скролла ПЕРЕД переходом
+    const container = document.querySelector('.content-container') || document.documentElement;
+    this.savedScrollPosition = container.scrollTop;
+
+    // 2. Переключаем состояние
     this.viewState = 'details';
     this.selectedMedia = media;
     this.fullMediaDetails = null;
@@ -127,6 +134,7 @@ switchToDirectSearch() {
   }
 
   onGoBack() {
+    // 1. Переключаем состояние обратно
     this.viewState = 'search';
     this.selectedMedia = null;
     this.fullMediaDetails = null;
@@ -136,6 +144,13 @@ switchToDirectSearch() {
     this.selectedSeason = 0;
     this.emptyResultsMessage = '';
     this.cdr.markForCheck();
+
+    // 2. Восстанавливаем скролл ПОСЛЕ того, как Angular обновил DOM (убрал [hidden])
+    // Небольшая задержка (0-50мс) гарантирует, что браузер уже отрисовал блок поиска
+    setTimeout(() => {
+      const container = document.querySelector('.content-container') || document.documentElement;
+      container.scrollTop = this.savedScrollPosition;
+    }, 50);
   }
 
   onRequestDirectSearch() {

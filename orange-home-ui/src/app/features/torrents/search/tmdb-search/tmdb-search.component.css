@@ -81,3 +81,20 @@
   align-items: center;
   gap: 4px;
 }
+
+.sentinel {
+  min-height: 50px;
+}
+
+.scroll-to-top-btn {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.scroll-to-top-btn:hover {
+  transform: translateY(-2px);
+}

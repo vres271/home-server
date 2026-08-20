@@ -4,7 +4,7 @@
 <!-- РЕЖИМ 1: ПРЯМОЙ ПОИСК -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 @if (showDirectSearch) {
-  <div class="">
+  <div>
     <div #directSearchBlock class="flex flex-column md:flex-row gap-3 mb-2">
       <p-iconField iconPosition="right" class="w-full md:flex-1">
         <input 
@@ -33,7 +33,6 @@
       </p-button>
     </div>
 
-    <!-- Ссылка на обычный поиск -->
     <div class="flex justify-content-end mb-4">
       <a href="javascript:void(0)" class="text-sm text-primary hover:underline cursor-pointer flex align-items-center gap-1" (click)="switchToNormalSearch()">
         <i class="pi pi-search text-xs"></i>
@@ -42,7 +41,6 @@
     </div>
   </div>
 
-  <!-- Блок результатов для прямого поиска -->
   @if (isSearched || searchLoading) {
     <div class="mt-4">
       <app-filter-panel (filtersChanged)="onFiltersChanged()"></app-filter-panel>
@@ -68,12 +66,12 @@
 }
 
 <!-- ═══════════════════════════════════════════════════════════════ -->
-<!-- РЕЖИМ 2: ОБЫЧНЫЙ ПОИСК (TMDB) -->
+<!-- РЕЖИМ 2: ОБЫЧНЫЙ ПОИСК (TMDB) + ДЕТАЛИ -->
 <!-- ═══════════════════════════════════════════════════════════════ -->
 @if (!showDirectSearch) {
   
-  <!-- 🔥 2.1. Список результатов поиска TMDB (показываем ТОЛЬКО если фильм еще не выбран) -->
-  @if (viewState === 'search') {
+  <!-- 🔥 2.1. Поиск TMDB: ВСЕГДА в DOM, но скрыт, когда открыты детали -->
+  <div [hidden]="viewState === 'details'">
     <app-tmdb-search 
       [savedResults]="savedTmdbResults"
       [savedQuery]="savedTmdbQuery"
@@ -82,11 +80,11 @@
       (searchCompleted)="onTmdbSearchCompleted($event)"
       (requestDirectSearch)="switchToDirectSearch()">
     </app-tmdb-search>
-  }
+  </div>
 
-  <!-- 🔥 2.2. Детали фильма/сериала и результаты торрентов (показываем ТОЛЬКО если фильм выбран) -->
-  @if (viewState === 'details' && selectedMedia) {
-    <div>
+  <!-- 🔥 2.2. Детали: Рендерятся только если выбран медиа-объект, но скрыты, когда мы в режиме поиска -->
+  @if (selectedMedia) {
+    <div [hidden]="viewState !== 'details'">
       <app-media-details
         [media]="selectedMedia"
         [fullDetails]="fullMediaDetails"
