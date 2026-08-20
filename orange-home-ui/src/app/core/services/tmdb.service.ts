@@ -12,7 +12,7 @@ export class TmdbService {
   private readonly config = inject(ConfigService);
   private readonly settings = this.config.settings;
 
-  private readonly apiBaseUrl = this.settings.tmdb.baseUrl;
+  private readonly apiBaseUrl = this.settings.tmdb.baseUrl + '/3';
   private readonly imagesBaseUrl = this.settings.tmdb.imagesBaseUrl;
   private readonly apiKey = this.settings.tmdb.apiKey;
   private readonly language = this.settings.tmdb.defaultLanguage;
@@ -25,20 +25,20 @@ export class TmdbService {
    * @param query Поисковый запрос
    * @param page Номер страницы (по умолчанию 1)
    */
-  searchMulti(query: string, page: number = 1): Observable<TmdbSearchResponse> {
-    const params = new HttpParams()
-      .set('api_key', this.apiKey)
-      .set('query', query)
-      .set('page', page.toString())
-      .set('language', this.language)
-      .set('include_adult', 'false');
-
-    return this.http.get<TmdbSearchResponse>(`${this.apiBaseUrl}/3/search/multi`, { params }).pipe(
+  searchMulti(query: string, page: number = 1): Observable<{ results: TmdbSearchResult[], total_results: number, total_pages: number }> {
+    return this.http.get<any>(`${this.apiBaseUrl}/search/multi`, {
+      params: {
+        api_key: this.apiKey,
+        language: 'ru-RU',
+        query: query,
+        include_adult: 'false',
+        page: String(page)
+      }
+    }).pipe(
       map(response => ({
-        ...response,
-        results: response.results.filter(
-          (item: any) => item.media_type !== 'person'
-        ) as TmdbSearchResult[]
+        results: response.results || [],
+        total_results: response.total_results || 0,
+        total_pages: Math.min(response.total_pages || 1, 20) // TMDB ограничивает search до 20 страниц
       }))
     );
   }
@@ -47,7 +47,7 @@ export class TmdbService {
    * Расширенный поиск через /discover/movie или /discover/tv.
    * Позволяет комбинировать текст + жанры + год + рейтинг + сортировку.
    */
-  discover(params: DiscoverParams): Observable<{ results: TmdbSearchResult[]; total_results: number; page: number }> {
+  discover(params: DiscoverParams): Observable<{ results: TmdbSearchResult[], total_results: number, total_pages: number }> {
     const httpParams: Record<string, string> = {
       api_key: this.apiKey,
       language: 'ru-RU',
@@ -76,11 +76,11 @@ export class TmdbService {
 
     const endpoint = isMovie ? 'discover/movie' : 'discover/tv';
 
-    return this.http.get<any>(`${this.apiBaseUrl}/3/${endpoint}`, { params: httpParams }).pipe(
+    return this.http.get<any>(`${this.apiBaseUrl}/${endpoint}`, { params: httpParams }).pipe(
       map(response => ({
         results: (response.results || []).map((item: any) => ({ ...item, media_type: params.mediaType })),
         total_results: response.total_results || 0,
-        page: response.page || 1
+        total_pages: Math.min(response.total_pages || 1, 500) // TMDB ограничивает discover до 500 страниц
       }))
     );
   }
@@ -125,7 +125,7 @@ export class TmdbService {
    */
   getExternalIds(id: number, mediaType: 'movie' | 'tv'): Observable<{ imdb_id: string | null }> {
     return this.http.get<{ imdb_id: string | null }>(
-      `${this.apiBaseUrl}/3/${mediaType}/${id}/external_ids`,
+      `${this.apiBaseUrl}/${mediaType}/${id}/external_ids`,
       { params: new HttpParams().set('api_key', this.apiKey) }
     );
   }
@@ -139,7 +139,7 @@ export class TmdbService {
       .set('language', this.language)
       .set('append_to_response', 'videos,credits,seasons'); // Магия TMDB: всё в одном запросе
 
-    return this.http.get<any>(`${this.apiBaseUrl}/3/${mediaType}/${id}`, { params });
+    return this.http.get<any>(`${this.apiBaseUrl}/${mediaType}/${id}`, { params });
   }
 
   /**
@@ -151,7 +151,7 @@ export class TmdbService {
       .set('language', this.language);
 
     return this.http.get<any>(
-      `${this.apiBaseUrl}/3/tv/${tvId}/season/${seasonNumber}`,
+      `${this.apiBaseUrl}/tv/${tvId}/season/${seasonNumber}`,
       { params }
     );
   }
@@ -166,7 +166,7 @@ export class TmdbService {
 
   getMovieGenres(): Observable<Genre[]> {
     if (this.movieGenresCache) return of(this.movieGenresCache);
-    return this.http.get<{ genres: Genre[] }>(`${this.apiBaseUrl}/3/genre/movie/list`, {
+    return this.http.get<{ genres: Genre[] }>(`${this.apiBaseUrl}/genre/movie/list`, {
       params: { api_key: this.apiKey, language: 'ru-RU' }
     }).pipe(
       map(r => r.genres),
@@ -176,7 +176,7 @@ export class TmdbService {
 
   getTvGenres(): Observable<Genre[]> {
     if (this.tvGenresCache) return of(this.tvGenresCache);
-    return this.http.get<{ genres: Genre[] }>(`${this.apiBaseUrl}/3/genre/tv/list`, {
+    return this.http.get<{ genres: Genre[] }>(`${this.apiBaseUrl}/genre/tv/list`, {
       params: { api_key: this.apiKey, language: 'ru-RU' }
     }).pipe(
       map(r => r.genres),
