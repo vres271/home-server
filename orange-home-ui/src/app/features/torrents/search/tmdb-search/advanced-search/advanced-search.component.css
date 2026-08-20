@@ -1,0 +1,13 @@
+.advanced-search-panel {
+  animation: slideDown 0.25s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+:host ::ng-deep .p-multiselect .p-multiselect-label {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}

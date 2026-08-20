@@ -1,0 +1,126 @@
+<div class="advanced-search-panel surface-card border-1 border-solid border-300 border-round p-3 mb-3">
+  <div class="flex justify-content-between align-items-center mb-3">
+    <div class="font-semibold text-lg">
+      <i class="pi pi-filter mr-2"></i>Расширенный поиск
+    </div>
+    <button pButton type="button" icon="pi pi-times" class="p-button-text p-button-rounded p-button-sm"
+            (click)="onClose()" pTooltip="Скрыть фильтры"></button>
+  </div>
+
+  <div class="grid">
+    <!-- Тип медиа -->
+    <div class="col-12 md:col-6 lg:col-3">
+      <label class="block text-sm font-medium mb-1">Тип</label>
+      <p-dropdown
+        [options]="[
+          { label: 'Фильмы', value: 'movie' },
+          { label: 'Сериалы', value: 'tv' }
+        ]"
+        [(ngModel)]="mediaType"
+        (onChange)="onMediaTypeChange()"
+        styleClass="w-full">
+      </p-dropdown>
+    </div>
+
+    <!-- Название (опционально) -->
+    <div class="col-12 md:col-6 lg:col-3">
+      <label class="block text-sm font-medium mb-1">Название (необязательно)</label>
+      <input
+        pInputText
+        type="text"
+        [(ngModel)]="query"
+        placeholder="Например: Дюна"
+        class="w-full" />
+    </div>
+
+    <!-- Год от -->
+    <div class="col-6 md:col-3 lg:col-2">
+      <label class="block text-sm font-medium mb-1">Год от</label>
+      <p-inputNumber
+        [(ngModel)]="yearFrom"
+        [min]="1900"
+        [max]="currentYear"
+        [useGrouping]="false"
+        placeholder="1990"
+        styleClass="w-full"
+        inputStyleClass="w-full">
+      </p-inputNumber>
+    </div>
+
+    <!-- Год до -->
+    <div class="col-6 md:col-3 lg:col-2">
+      <label class="block text-sm font-medium mb-1">Год до</label>
+      <p-inputNumber
+        [(ngModel)]="yearTo"
+        [min]="1900"
+        [max]="currentYear"
+        [useGrouping]="false"
+        placeholder="2025"
+        styleClass="w-full"
+        inputStyleClass="w-full">
+      </p-inputNumber>
+    </div>
+
+    <!-- Рейтинг -->
+    <div class="col-6 md:col-3 lg:col-2">
+      <label class="block text-sm font-medium mb-1">Рейтинг ≥</label>
+      <p-inputNumber
+        [ngModel]="minRating || null"
+        (ngModelChange)="onRatingChange($event)"
+        [min]="0"
+        [max]="10"
+        mode="decimal"
+        [minFractionDigits]="1"
+        [maxFractionDigits]="1"
+        placeholder="0.0"
+        styleClass="w-full"
+        inputStyleClass="w-full">
+      </p-inputNumber>
+    </div>
+
+    <!-- Жанры -->
+    <div class="col-12 md:col-6 lg:col-4">
+      <label class="block text-sm font-medium mb-1">
+        Жанры
+        @if (genresLoading) { <i class="pi pi-spin pi-spinner ml-1 text-sm"></i> }
+      </label>
+      <p-multiSelect
+        [options]="genreOptions"
+        [(ngModel)]="selectedGenreIds"
+        defaultLabel="Выберите жанры"
+        display="chip"
+        [showClear]="true"
+        [filter]="true"
+        filterPlaceholder="Поиск жанра..."
+        styleClass="w-full"
+        [disabled]="genresLoading">
+      </p-multiSelect>
+    </div>
+
+    <!-- Сортировка -->
+    <div class="col-12 md:col-6 lg:col-4">
+      <label class="block text-sm font-medium mb-1">Сортировка</label>
+      <p-dropdown
+        [options]="currentSortOptions"
+        [(ngModel)]="sortBy"
+        styleClass="w-full">
+      </p-dropdown>
+    </div>
+  </div>
+
+  <!-- Кнопки действий -->
+  <div class="flex gap-2 justify-content-end mt-3">
+    <button pButton
+            label="Сбросить"
+            icon="pi pi-refresh"
+            class="p-button-outlined p-button-sm"
+            (click)="reset()">
+    </button>
+    <button pButton
+            label="Искать"
+            icon="pi pi-search"
+            class="p-button-sm"
+            (click)="submit()">
+    </button>
+  </div>
+</div>

@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { map, Observable } from 'rxjs';
+import { map, Observable, of, tap } from 'rxjs';
 import { ConfigService } from './config.service';
-import { TmdbSearchResponse, TmdbSearchResult } from '../models/tmdb.model';
+import { DiscoverMediaType, DiscoverParams, Genre, TmdbSearchResponse, TmdbSearchResult } from '../models/tmdb.model';
 
 @Injectable({
   providedIn: 'root'
@@ -16,6 +16,9 @@ export class TmdbService {
   private readonly imagesBaseUrl = this.settings.tmdb.imagesBaseUrl;
   private readonly apiKey = this.settings.tmdb.apiKey;
   private readonly language = this.settings.tmdb.defaultLanguage;
+
+  private movieGenresCache: Genre[] | null = null;
+  private tvGenresCache: Genre[] | null = null;
 
   /**
    * Мульти-поиск фильмов и сериалов
@@ -36,6 +39,48 @@ export class TmdbService {
         results: response.results.filter(
           (item: any) => item.media_type !== 'person'
         ) as TmdbSearchResult[]
+      }))
+    );
+  }
+
+  /**
+   * Расширенный поиск через /discover/movie или /discover/tv.
+   * Позволяет комбинировать текст + жанры + год + рейтинг + сортировку.
+   */
+  discover(params: DiscoverParams): Observable<{ results: TmdbSearchResult[]; total_results: number; page: number }> {
+    const httpParams: Record<string, string> = {
+      api_key: this.apiKey,
+      language: 'ru-RU',
+      include_adult: 'false',
+      page: String(params.page || 1),
+      sort_by: params.sortBy || 'popularity.desc'
+    };
+
+    if (params.genreIds?.length) {
+      httpParams['with_genres'] = params.genreIds.join(',');
+    }
+    if (params.minRating && params.minRating > 0) {
+      httpParams['vote_average.gte'] = String(params.minRating);
+    }
+    if (params.query?.trim()) {
+      httpParams['with_text_query'] = params.query.trim();
+    }
+
+    const isMovie = params.mediaType === 'movie';
+    if (params.yearFrom) {
+      httpParams[isMovie ? 'primary_release_date.gte' : 'first_air_date.gte'] = `${params.yearFrom}-01-01`;
+    }
+    if (params.yearTo) {
+      httpParams[isMovie ? 'primary_release_date.lte' : 'first_air_date.lte'] = `${params.yearTo}-12-31`;
+    }
+
+    const endpoint = isMovie ? 'discover/movie' : 'discover/tv';
+
+    return this.http.get<any>(`${this.apiBaseUrl}/3/${endpoint}`, { params: httpParams }).pipe(
+      map(response => ({
+        results: (response.results || []).map((item: any) => ({ ...item, media_type: params.mediaType })),
+        total_results: response.total_results || 0,
+        page: response.page || 1
       }))
     );
   }
@@ -117,6 +162,30 @@ export class TmdbService {
   getStillUrl(path: string | null): string | null {
     if (!path) return null;
     return `${this.imagesBaseUrl}/t/p/w300${path}`;
+  }
+
+  getMovieGenres(): Observable<Genre[]> {
+    if (this.movieGenresCache) return of(this.movieGenresCache);
+    return this.http.get<{ genres: Genre[] }>(`${this.apiBaseUrl}/3/genre/movie/list`, {
+      params: { api_key: this.apiKey, language: 'ru-RU' }
+    }).pipe(
+      map(r => r.genres),
+      tap(genres => (this.movieGenresCache = genres))
+    );
+  }
+
+  getTvGenres(): Observable<Genre[]> {
+    if (this.tvGenresCache) return of(this.tvGenresCache);
+    return this.http.get<{ genres: Genre[] }>(`${this.apiBaseUrl}/3/genre/tv/list`, {
+      params: { api_key: this.apiKey, language: 'ru-RU' }
+    }).pipe(
+      map(r => r.genres),
+      tap(genres => (this.tvGenresCache = genres))
+    );
+  }
+
+  getGenresFor(mediaType: DiscoverMediaType): Observable<Genre[]> {
+    return mediaType === 'movie' ? this.getMovieGenres() : this.getTvGenres();
   }
 
 }

@@ -7,13 +7,18 @@ import { InputIconModule } from 'primeng/inputicon';
 import { ButtonModule } from 'primeng/button';
 import { MessageService } from 'primeng/api';
 import { TmdbService } from '../../../../core/services/tmdb.service';
-import { TmdbSearchResult } from '../../../../core/models/tmdb.model';
+import { DiscoverParams, TmdbSearchResult } from '../../../../core/models/tmdb.model';
+import { AdvancedSearchComponent } from './advanced-search/advanced-search.component';
 
 @Component({
   selector: 'app-tmdb-search',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, InputTextModule, ButtonModule, IconFieldModule, InputIconModule],
+  imports: [
+    CommonModule, FormsModule, InputTextModule,
+    ButtonModule, IconFieldModule, InputIconModule,
+    AdvancedSearchComponent,
+  ],
   templateUrl: './tmdb-search.component.html',
   styleUrls: ['./tmdb-search.component.css']
 })
@@ -34,6 +39,7 @@ export class TmdbSearchComponent {
   results: TmdbSearchResult[] = [];
   isLoading = false;
   hasSearched = false;
+  showAdvanced = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['savedResults'] && this.savedResults.length > 0) {
@@ -113,4 +119,61 @@ export class TmdbSearchComponent {
   getPoster(item: TmdbSearchResult): string | null {
     return this.tmdbService.getPosterUrl(item.poster_path);
   }
+
+  toggleAdvanced(): void {
+    this.showAdvanced = !this.showAdvanced;
+    this.cdr.markForCheck();
+  }
+
+  onAdvancedSearch(params: DiscoverParams): void {
+    this.isLoading = true;
+    this.hasSearched = true;
+    this.results = [];
+    this.cdr.markForCheck();
+
+    this.tmdbService.discover(params).subscribe({
+      next: (response) => {
+        this.results = response.results || [];
+        this.isLoading = false;
+
+        // Сохраняем состояние — query формируем из параметров для отображения
+        const queryLabel = this.buildDiscoverLabel(params);
+        this.searchCompleted.emit({
+          results: this.results,
+          query: queryLabel,
+          hasSearched: this.hasSearched
+        });
+
+        if (this.results.length === 0) {
+          this.messageService.add({
+            severity: 'warn',
+            summary: 'Внимание',
+            detail: 'По заданным фильтрам ничего не найдено. Попробуйте ослабить условия.'
+          });
+        }
+        this.cdr.markForCheck();
+      },
+      error: () => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Ошибка',
+          detail: 'Не удалось выполнить расширенный поиск'
+        });
+        this.isLoading = false;
+        this.cdr.markForCheck();
+      }
+    });
+  }
+
+  private buildDiscoverLabel(p: DiscoverParams): string {
+    const parts: string[] = [];
+    if (p.query) parts.push(`«${p.query}»`);
+    parts.push(p.mediaType === 'movie' ? 'Фильмы' : 'Сериалы');
+    if (p.yearFrom || p.yearTo) {
+      parts.push(`${p.yearFrom ?? '…'}–${p.yearTo ?? '…'}`);
+    }
+    if (p.minRating) parts.push(`≥${p.minRating}`);
+    return parts.join(' · ');
+  }
+
 }

@@ -44,3 +44,31 @@ export interface TmdbSeason {
   overview: string;
   vote_average: number;
 }
+
+export interface Genre {
+  id: number;
+  name: string;
+}
+
+export type DiscoverMediaType = 'movie' | 'tv';
+
+export type DiscoverSortBy =
+  | 'popularity.desc'
+  | 'popularity.asc'
+  | 'vote_average.desc'
+  | 'vote_average.asc'
+  | 'primary_release_date.desc'
+  | 'primary_release_date.asc'
+  | 'first_air_date.desc'
+  | 'first_air_date.asc';
+
+export interface DiscoverParams {
+  mediaType: DiscoverMediaType;
+  query?: string;
+  genreIds?: number[];
+  yearFrom?: number;
+  yearTo?: number;
+  minRating?: number;
+  sortBy?: DiscoverSortBy;
+  page?: number;
+}
