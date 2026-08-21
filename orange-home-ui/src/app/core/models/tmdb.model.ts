@@ -69,6 +69,7 @@ export interface DiscoverParams {
   yearFrom?: number;
   yearTo?: number;
   minRating?: number;
+  countryCode?: string;
   sortBy?: DiscoverSortBy;
   page?: number;
 }

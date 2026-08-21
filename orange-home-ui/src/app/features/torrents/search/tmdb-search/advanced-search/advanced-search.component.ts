@@ -8,7 +8,6 @@ import { Subject } from 'rxjs';
 import { takeUntil, forkJoin } from 'rxjs';
 
 import { InputTextModule } from 'primeng/inputtext';
-import { DropdownModule } from 'primeng/dropdown';
 import { MultiSelectModule } from 'primeng/multiselect';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { ButtonModule } from 'primeng/button';
@@ -18,8 +17,14 @@ import { TmdbService } from '../../../../../core/services/tmdb.service';
 import {
   DiscoverParams, DiscoverMediaType, DiscoverSortBy, Genre
 } from '../../../../../core/models/tmdb.model';
+import { SelectModule } from 'primeng/select';
 
 interface SelectOption { label: string; value: any; }
+
+interface CountryOption {
+  label: string;
+  value: string;
+}
 
 @Component({
   selector: 'app-advanced-search',
@@ -27,7 +32,7 @@ interface SelectOption { label: string; value: any; }
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule, FormsModule,
-    InputTextModule, DropdownModule, MultiSelectModule,
+    InputTextModule, SelectModule, MultiSelectModule,
     InputNumberModule, ButtonModule, ChipModule
   ],
   templateUrl: './advanced-search.component.html',
@@ -45,9 +50,11 @@ export class AdvancedSearchComponent implements OnInit, OnDestroy {
   mediaType: DiscoverMediaType = 'movie';
   query = '';
   selectedGenreIds: number[] = [];
+  currentYear = new Date().getFullYear();
   yearFrom: number | null = null;
   yearTo: number | null = null;
-  minRating: number = 0;
+  minRating: number | null = null;
+  selectedCountryCode: string | null = null;
   sortBy: DiscoverSortBy = 'popularity.desc';
 
   // Данные для UI
@@ -69,7 +76,28 @@ export class AdvancedSearchComponent implements OnInit, OnDestroy {
     { label: 'Сначала старые', value: 'first_air_date.asc' }
   ];
 
-  currentYear = new Date().getFullYear();
+  countryOptions: CountryOption[] = [
+    { label: 'США', value: 'US' },
+    { label: 'Россия', value: 'RU' },
+    { label: 'Великобритания', value: 'GB' },
+    { label: 'Южная Корея', value: 'KR' },
+    { label: 'Япония', value: 'JP' },
+    { label: 'Франция', value: 'FR' },
+    { label: 'Германия', value: 'DE' },
+    { label: 'Индия', value: 'IN' },
+    { label: 'Испания', value: 'ES' },
+    { label: 'Италия', value: 'IT' },
+    { label: 'Канада', value: 'CA' },
+    { label: 'Австралия', value: 'AU' },
+    { label: 'Китай', value: 'CN' },
+    { label: 'Мексика', value: 'MX' },
+    { label: 'Бразилия', value: 'BR' },
+    { label: 'Швеция', value: 'SE' },
+    { label: 'Норвегия', value: 'NO' },
+    { label: 'Дания', value: 'DK' },
+    { label: 'Новая Зеландия', value: 'NZ' },
+    { label: 'Гонконг', value: 'HK' }
+  ];
 
   get currentGenres(): Genre[] {
     return this.mediaType === 'movie' ? this.movieGenres : this.tvGenres;
@@ -127,6 +155,28 @@ export class AdvancedSearchComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  // Методы для установки дефолтных значений при фокусе
+  setDefaultYearFrom(): void {
+    if (this.yearFrom === null || this.yearFrom === undefined) {
+      this.yearFrom = this.currentYear - 10;
+      this.cdr.markForCheck();
+    }
+  }
+
+  setDefaultYearTo(): void {
+    if (this.yearTo === null || this.yearTo === undefined) {
+      this.yearTo = this.currentYear;
+      this.cdr.markForCheck();
+    }
+  }
+
+  setDefaultRating(): void {
+    if (this.minRating === null || this.minRating === undefined || this.minRating === 0) {
+      this.minRating = 7.0;
+      this.cdr.markForCheck();
+    }
+  }
+
   submit(): void {
     if (this.yearFrom && this.yearTo && this.yearFrom > this.yearTo) {
       [this.yearFrom, this.yearTo] = [this.yearTo, this.yearFrom];
@@ -138,7 +188,8 @@ export class AdvancedSearchComponent implements OnInit, OnDestroy {
       genreIds: this.selectedGenreIds.length ? this.selectedGenreIds : undefined,
       yearFrom: this.yearFrom || undefined,
       yearTo: this.yearTo || undefined,
-      minRating: this.minRating > 0 ? this.minRating : undefined,
+      minRating: this.minRating || undefined,
+      countryCode: this.selectedCountryCode || undefined,
       sortBy: this.sortBy
     });
   }
@@ -149,6 +200,7 @@ export class AdvancedSearchComponent implements OnInit, OnDestroy {
     this.yearFrom = null;
     this.yearTo = null;
     this.minRating = 0;
+    this.selectedCountryCode = null;
     this.sortBy = 'popularity.desc';
     this.cdr.markForCheck();
   }

@@ -231,10 +231,10 @@ export class TmdbSearchComponent implements AfterViewChecked, AfterViewInit, OnD
         this.totalPages = response.total_pages;
         this.isLoading = false;
 
-        const queryLabel = this.buildDiscoverLabel(params);
+        // const queryLabel = this.buildDiscoverLabel(params);
         this.searchCompleted.emit({
           results: this.results,
-          query: queryLabel,
+          query: '',
           hasSearched: this.hasSearched
         });
 

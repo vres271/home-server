@@ -65,6 +65,10 @@ export class TmdbService {
     if (params.query?.trim()) {
       httpParams['with_text_query'] = params.query.trim();
     }
+    
+    if (params.countryCode) {
+      httpParams['with_origin_country'] = params.countryCode;
+    }
 
     const isMovie = params.mediaType === 'movie';
     if (params.yearFrom) {
@@ -80,7 +84,7 @@ export class TmdbService {
       map(response => ({
         results: (response.results || []).map((item: any) => ({ ...item, media_type: params.mediaType })),
         total_results: response.total_results || 0,
-        total_pages: Math.min(response.total_pages || 1, 500) // TMDB ограничивает discover до 500 страниц
+        total_pages: Math.min(response.total_pages || 1, 500)
       }))
     );
   }
