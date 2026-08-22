@@ -50,6 +50,14 @@ export interface Genre {
   name: string;
 }
 
+export interface TmdbPerson {
+  id: number;
+  name: string;
+  original_name: string;
+  profile_path: string | null;
+  known_for_department: string; // 'Acting', 'Directing', 'Writing' и т.д.
+}
+
 export type DiscoverMediaType = 'movie' | 'tv';
 
 export type DiscoverSortBy =
@@ -70,6 +78,7 @@ export interface DiscoverParams {
   yearTo?: number;
   minRating?: number;
   countryCode?: string;
+  personId?: number;
   sortBy?: DiscoverSortBy;
   page?: number;
 }

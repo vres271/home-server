@@ -1,0 +1,81 @@
+<div class="person-search-container">
+  <!-- Поле ввода с интегрированной кнопкой "Найти" -->
+  <div class="flex gap-2 mb-3">
+    
+    <!-- Гарантированно работающая группа: Инпут + Кнопка в одной строке -->
+    <div class="flex flex-1 border-1 border-300 border-round overflow-hidden">
+      <input 
+        pInputText 
+        type="text" 
+        [ngModel]="query"
+        (ngModelChange)="onQueryChange($event)"
+        (keydown.enter)="performSearch()"
+        placeholder="Режиссёр или актёр..." 
+        class="flex-1 border-none px-3 py-2"
+      />
+      <button 
+        pButton 
+        type="button" 
+        icon="pi pi-search" 
+        [disabled]="!query.trim()"
+        (click)="performSearch()"
+        style="border-radius: 0;"
+        [severity]="!query.trim() ? 'secondary' : 'primary'"
+        class="border-none border-l-1 border-300">
+      </button>
+    </div>
+    
+    <!-- Кнопка сброса (появляется только когда персона выбрана) -->
+    @if (selectedPersonName) {
+      <p-button 
+        icon="pi pi-times" 
+        severity="secondary" 
+        [text]="true" 
+        [rounded]="true" 
+        (onClick)="clearSelection()" 
+        pTooltip="Сбросить выбор">
+      </p-button>
+    }
+  </div>
+
+  @if (isLoading) {
+    <div class="flex justify-content-center py-4">
+      <i class="pi pi-spin pi-spinner text-2xl text-primary"></i>
+    </div>
+  }
+
+  @if (!isLoading && results.length > 0) {
+    <div #scrollWrapper 
+        class="person-scroll-wrapper" 
+        [class.is-scrollable]="isScrollable"
+        [class.scrolled-end]="isScrolledToEnd">
+      <div 
+        #scrollContainer
+        class="person-scroll-container"
+        (scroll)="onScroll()">
+        @for (person of results; track person.id) {
+          <div class="person-card-wrapper">
+            <div class="media-card cursor-pointer" (click)="onSelect(person)">
+              <div class="poster-wrapper">
+                @if (getProfileUrl(person.profile_path); as profile) {
+                  <img [src]="profile" [alt]="person.name" loading="lazy" />
+                } @else {
+                  <div class="no-poster">
+                    <i class="pi pi-user text-3xl text-400"></i>
+                  </div>
+                }
+                <div class="media-type-badge">
+                  {{ getDepartmentLabel(person.known_for_department) }}
+                </div>
+              </div>
+              
+              <div class="media-info">
+                <div class="media-title">{{ person.name }}</div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

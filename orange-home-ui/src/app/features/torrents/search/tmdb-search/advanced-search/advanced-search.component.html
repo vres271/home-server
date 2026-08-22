@@ -144,6 +144,19 @@
       </p-select>
     </div>
 
+    <!-- Человек (Режиссёр / Актёр) -->
+    <div class="col-12">
+      <label class="block text-sm font-medium mb-1">
+        Персона 
+        @if (selectedPersonName) {
+          <span class="text-primary ml-2">
+            <i class="pi pi-check-circle text-xs"></i> Выбрано: {{ selectedPersonName }}
+          </span>
+        }
+      </label>
+      <app-person-search (personSelected)="onPersonSelected($event)"></app-person-search>
+    </div>
+
   </div>
 
   <!-- Кнопки действий -->

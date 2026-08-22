@@ -1,6 +1,7 @@
 import {
   Component, ChangeDetectionStrategy, ChangeDetectorRef,
-  EventEmitter, Output, inject, OnInit, OnDestroy
+  EventEmitter, Output, inject, OnInit, OnDestroy,
+  ViewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -18,6 +19,7 @@ import {
   DiscoverParams, DiscoverMediaType, DiscoverSortBy, Genre
 } from '../../../../../core/models/tmdb.model';
 import { SelectModule } from 'primeng/select';
+import { PersonSearchComponent } from "./person-search/person-search.component";
 
 interface SelectOption { label: string; value: any; }
 
@@ -33,8 +35,9 @@ interface CountryOption {
   imports: [
     CommonModule, FormsModule,
     InputTextModule, SelectModule, MultiSelectModule,
-    InputNumberModule, ButtonModule, ChipModule
-  ],
+    InputNumberModule, ButtonModule, ChipModule,
+    PersonSearchComponent
+],
   templateUrl: './advanced-search.component.html',
   styleUrls: ['./advanced-search.component.css']
 })
@@ -45,6 +48,7 @@ export class AdvancedSearchComponent implements OnInit, OnDestroy {
 
   @Output() search = new EventEmitter<DiscoverParams>();
   @Output() close = new EventEmitter<void>();
+  @ViewChild(PersonSearchComponent) personSearchComponent!: PersonSearchComponent;
 
   // Форма
   mediaType: DiscoverMediaType = 'movie';
@@ -55,6 +59,8 @@ export class AdvancedSearchComponent implements OnInit, OnDestroy {
   yearTo: number | null = null;
   minRating: number | null = null;
   selectedCountryCode: string | null = null;
+  selectedPersonId: number | null = null;
+  selectedPersonName: string | null = null;
   sortBy: DiscoverSortBy = 'popularity.desc';
 
   // Данные для UI
@@ -155,6 +161,17 @@ export class AdvancedSearchComponent implements OnInit, OnDestroy {
     this.cdr.markForCheck();
   }
 
+  onPersonSelected(event: { id: number, name: string }): void {
+    if (event.id === 0) {
+      this.selectedPersonId = null;
+      this.selectedPersonName = null;
+    } else {
+      this.selectedPersonId = event.id;
+      this.selectedPersonName = event.name;
+    }
+    this.cdr.markForCheck();
+  }
+
   // Методы для установки дефолтных значений при фокусе
   setDefaultYearFrom(): void {
     if (this.yearFrom === null || this.yearFrom === undefined) {
@@ -190,6 +207,7 @@ export class AdvancedSearchComponent implements OnInit, OnDestroy {
       yearTo: this.yearTo || undefined,
       minRating: this.minRating || undefined,
       countryCode: this.selectedCountryCode || undefined,
+      personId: this.selectedPersonId || undefined,
       sortBy: this.sortBy
     });
   }
@@ -201,8 +219,13 @@ export class AdvancedSearchComponent implements OnInit, OnDestroy {
     this.yearTo = null;
     this.minRating = 0;
     this.selectedCountryCode = null;
+    this.selectedPersonId = null;
+    this.selectedPersonName = null;
     this.sortBy = 'popularity.desc';
     this.cdr.markForCheck();
+    if (this.personSearchComponent) {
+      this.personSearchComponent.clearSelection();
+    }    
   }
 
   onClose(): void {

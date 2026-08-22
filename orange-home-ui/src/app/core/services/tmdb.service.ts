@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, Observable, of, tap } from 'rxjs';
 import { ConfigService } from './config.service';
-import { DiscoverMediaType, DiscoverParams, Genre, TmdbSearchResponse, TmdbSearchResult } from '../models/tmdb.model';
+import { DiscoverMediaType, DiscoverParams, Genre, TmdbPerson, TmdbSearchResponse, TmdbSearchResult } from '../models/tmdb.model';
 
 @Injectable({
   providedIn: 'root'
@@ -68,6 +68,10 @@ export class TmdbService {
     
     if (params.countryCode) {
       httpParams['with_origin_country'] = params.countryCode;
+    }
+      
+    if (params.personId) {
+      httpParams['with_people'] = String(params.personId);
     }
 
     const isMovie = params.mediaType === 'movie';
@@ -187,6 +191,23 @@ export class TmdbService {
       tap(genres => (this.tvGenresCache = genres))
     );
   }
+
+  /**
+   * Поиск персоны (актёр, режиссёр и т.д.)
+   */
+  searchPerson(query: string): Observable<TmdbPerson[]> {
+    return this.http.get<any>(`${this.apiBaseUrl}/search/person`, {
+      params: {
+        api_key: this.apiKey,
+        language: 'ru-RU',
+        query: query,
+        include_adult: 'false',
+        page: 1
+      }
+    }).pipe(
+      map(response => response.results || [])
+    );
+  }  
 
   getGenresFor(mediaType: DiscoverMediaType): Observable<Genre[]> {
     return mediaType === 'movie' ? this.getMovieGenres() : this.getTvGenres();
