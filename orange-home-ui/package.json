@@ -1,13 +1,15 @@
 {
   "name": "orange-home-ui",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build:versioned": "ng build --configuration production && node ../deploy/generate-version.js",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "deploy": "npm run build && ssh root@192.168.0.150 \"rm -rf /var/www/orange-home-ui/*\" && scp -r dist/orange-home-ui/browser/* root@192.168.0.150:/var/www/orange-home-ui/"
+    "deploy": "npm run build:versioned && ssh root@192.168.0.150 \"rm -rf /var/www/orange-home-ui/*\" && scp -r dist/orange-home-ui/browser/* root@192.168.0.150:/var/www/orange-home-ui/",
+    "release": "npm run build:versioned && node ../deploy/create-github-release.js"
   },
   "private": true,
   "dependencies": {
