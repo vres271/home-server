@@ -1,4 +1,55 @@
 <div class="settings-page">
-    <h2 class="mt-1 mb-1">Система</h2>
+    <h2 class="mt-1 mb-3">Система</h2>
+
+    <!-- Ваш существующий компонент управления питанием -->
     <app-system-power-control />
+    
+    <h3 class="mt-4 mb-3 text-900">О приложении</h3>
+        
+    @if (versionInfo(); as v) {
+        <div class="flex flex-column gap-3">
+            <div class="flex align-items-center gap-2">
+                <span class="font-semibold text-500 w-8rem">Версия:</span>
+                <span class="text-900">{{ v.version }}</span>
+            </div>
+            <div class="flex align-items-center gap-2">
+                <span class="font-semibold text-500 w-8rem">Коммит:</span>
+                <span class="text-900 font-family-monospace bg-surface-100 border-round px-2 py-1 text-sm">
+                    {{ v.commitHash }}
+                </span>
+            </div>
+            <div class="flex align-items-center gap-2">
+                <span class="font-semibold text-500 w-8rem">Дата сборки:</span>
+                <span class="text-900">{{ v.buildDate | date:'dd.MM.yyyy HH:mm' }}</span>
+            </div>
+            
+            <!-- Блок проверки и установки обновлений -->
+            <div class="flex align-items-center gap-2 mt-2 pt-3 border-surface-200">
+                @if (installingUpdate()) {
+                    <p-progressSpinner styleClass="w-2rem h-2rem" />
+                    <span class="text-600">
+                        @if (updateStatus(); as s) {
+                            {{ s.message || 'Установка обновления...' }}
+                        } @else {
+                            Установка обновления...
+                        }
+                    </span>
+                } @else {
+                    <p-button
+                        icon="pi pi-refresh"
+                        label="Проверить обновления"
+                        styleClass="p-button-outlined"
+                        [loading]="checkingUpdate()"
+                        (onClick)="checkForUpdates()">
+                    </p-button>
+                }
+            </div>
+        </div>
+    } @else {
+        <p class="text-500 m-0">Информация о версии недоступна</p>
+    }
 </div>
+
+<!-- КРИТИЧЕСКИ ВАЖНО: Эти теги должны быть в шаблоне для работы диалогов и тостов -->
+<p-confirmDialog [style]="{'max-width': '450px'}" />
+<p-toast position="bottom-right" />

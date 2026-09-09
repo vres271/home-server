@@ -1,7 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { SystemActionResponse, SystemHealth, SystemStatus } from '../models/system.model';
+import { SystemActionResponse, SystemHealth, SystemStatus, UpdateCheckResponse, UpdateInstallResponse, UpdateStatusResponse } from '../models/system.model';
 
 @Injectable({
   providedIn: 'root'
@@ -37,4 +37,21 @@ export class SystemService {
       { headers: this.actionHeaders }
     );
   }
+
+  checkUpdate(): Observable<UpdateCheckResponse> {
+    return this.http.get<UpdateCheckResponse>('/api/system/update/check');
+  }
+
+  installUpdate(): Observable<UpdateInstallResponse> {
+    return this.http.post<UpdateInstallResponse>(
+      '/api/system/update/install',
+      {},
+      { headers: { 'X-System-Action': 'true' } }
+    );
+  }
+
+  getUpdateStatus(): Observable<UpdateStatusResponse> {
+    return this.http.get<UpdateStatusResponse>('/api/system/update/status');
+  }  
+
 }

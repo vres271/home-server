@@ -43,3 +43,6 @@ Thumbs.db
 
 # Config
 /public/config.json
+
+# Сгенерированный файл версии
+/public/version.json
