@@ -1,10 +1,10 @@
 {
   "/api/jackett": {
-    "target": "http://109.248.162.130:9117",
+    "target": "http://192.168.0.150",
     "secure": false,
     "changeOrigin": true,
     "pathRewrite": {
-      "^/api/jackett": ""
+      "^/api/jackett": "/api/jackett"
     },
     "logLevel": "debug"
   },

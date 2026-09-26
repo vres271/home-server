@@ -12,4 +12,3 @@ import { RouterOutlet } from '@angular/router';
 export class AppComponent {
 
 }
-// coment for version up

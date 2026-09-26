@@ -6,24 +6,19 @@ const readline = require('readline');
 const uiDir = path.join(__dirname, '..', 'orange-home-ui');
 const packageJsonPath = path.join(uiDir, 'package.json');
 const distDir = path.join(uiDir, 'dist', 'orange-home-ui', 'browser');
+const deployDir = __dirname; // Папка deploy
 
 function toPosixPath(winPath) {
   return winPath.replace(/\\/g, '/').replace(/^([A-Z]):/i, (match, drive) => `/${drive.toLowerCase()}`);
 }
 
-// Интерактивный выбор типа обновления
 async function promptBumpType() {
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
   const currentVersion = packageJson.version;
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
   
-  const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-  });
-
   return new Promise((resolve) => {
-    rl.question(`\n📌 Текущая версия: ${currentVersion}\n` +
-                `   Какой тип обновления? (patch/minor/major) [patch]: `, (answer) => {
+    rl.question(`\n📌 Текущая версия: ${currentVersion}\n   Какой тип обновления? (patch/minor/major) [patch]: `, (answer) => {
       rl.close();
       resolve(answer.trim() || 'patch');
     });
@@ -31,7 +26,6 @@ async function promptBumpType() {
 }
 
 async function main() {
-  // 0. Спрашиваем тип обновления
   const bumpType = await promptBumpType();
   if (!['patch', 'minor', 'major'].includes(bumpType)) {
     console.error(`❌ Неверный тип обновления: ${bumpType}. Используйте patch/minor/major`);
@@ -39,82 +33,67 @@ async function main() {
   }
 
   console.log(`\n🚀 Повышаем версию (${bumpType})...`);
-  try {
-    execSync(`npm version ${bumpType} --no-git-tag-version`, { cwd: uiDir, stdio: 'inherit' });
-  } catch (error) {
-    console.error('❌ Ошибка при повышении версии');
-    process.exit(1);
-  }
+  execSync(`npm version ${bumpType} --no-git-tag-version`, { cwd: uiDir, stdio: 'inherit' });
 
-  // 1. Читаем новую версию
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
   const version = packageJson.version;
   const tagName = `v${version}`;
   const archiveName = `orange-home-ui-${tagName}.tar.gz`;
-  const archivePath = path.join(__dirname, archiveName);
+  const archivePath = path.join(deployDir, archiveName);
 
-  console.log(`📦 Новая версия: ${tagName}`);
+  console.log(`\n📝 Фиксация изменений версии в Git...`);
+  execSync(`git add package.json package-lock.json`, { cwd: uiDir, stdio: 'inherit' });
+  execSync(`git commit -m "chore: release ${tagName}"`, { cwd: uiDir, stdio: 'inherit' });
+  execSync(`git tag ${tagName}`, { cwd: uiDir, stdio: 'inherit' });
 
-  // 2. Проверяем, что dist существует
-  if (!fs.existsSync(distDir)) {
-    console.error('❌ Ошибка: Папка dist/orange-home-ui/browser не найдена!');
-    console.error('   Сначала выполните: npm run build:versioned');
-    process.exit(1);
+  console.log(`\n📦 Сборка проекта (генерация актуального version.json)...`);
+  execSync(`npm run build:versioned`, { cwd: uiDir, stdio: 'inherit' });
+
+  console.log(`\n🗜️ Упаковка актуальных файлов в ${archiveName}...`);
+  const posixArchivePath = toPosixPath(archivePath);
+  const posixDistDir = toPosixPath(distDir);
+  execSync(`tar -czf "${posixArchivePath}" -C "${posixDistDir}" .`, { stdio: 'inherit' });
+
+  console.log(`\n🏷️ Отправка коммита и тега на GitHub...`);
+  const currentBranch = execSync('git branch --show-current', { cwd: uiDir }).toString().trim();
+  execSync(`git push origin ${currentBranch}`, { cwd: uiDir, stdio: 'inherit' });
+  execSync(`git push origin ${tagName}`, { cwd: uiDir, stdio: 'inherit' });
+
+  console.log(`\n☁️ Создание релиза на GitHub...`);
+  execSync(
+    `gh release create "${tagName}" "${archivePath}" ` +
+    `--title "Release ${tagName}" ` +
+    `--target "${currentBranch}" ` +
+    `--generate-notes`,
+    { cwd: uiDir, stdio: 'inherit' }
+  );
+
+  // 🧹 ОЧИСТКА: удаляем текущий и все старые архивы релизов
+  console.log('\n🧹 Очистка папки deploy от архивов релизов...');
+  const files = fs.readdirSync(deployDir);
+  let cleanedCount = 0;
+  
+  for (const file of files) {
+    if (file.startsWith('orange-home-ui-v') && file.endsWith('.tar.gz')) {
+      const filePath = path.join(deployDir, file);
+      try {
+        fs.unlinkSync(filePath);
+        console.log(`   🗑️ Удален: ${file}`);
+        cleanedCount++;
+      } catch (err) {
+        console.warn(`   ⚠️ Не удалось удалить ${file}:`, err.message);
+      }
+    }
+  }
+  
+  if (cleanedCount === 0) {
+    console.log('   ℹ️ Старых архивов не найдено.');
   }
 
-  // 3. Создаем архив
-  console.log(`🗜️  Упаковка файлов в ${archiveName}...`);
-  try {
-    const posixArchivePath = toPosixPath(archivePath);
-    const posixDistDir = toPosixPath(distDir);
-    execSync(`tar -czf "${posixArchivePath}" -C "${posixDistDir}" .`, { stdio: 'inherit' });
-  } catch (error) {
-    console.error('❌ Ошибка при создании архива:', error.message);
-    process.exit(1);
-  }
-
-  // 4. Проверяем, что релиз с таким тегом не существует
-  console.log(`🔍 Проверка существования релиза ${tagName}...`);
-  try {
-    execSync(`gh release view ${tagName}`, { cwd: uiDir, stdio: 'pipe' });
-    console.error(`❌ Релиз ${tagName} уже существует!`);
-    console.error('   Удалите его командой: gh release delete ' + tagName + ' --yes');
-    fs.unlinkSync(archivePath);
-    process.exit(1);
-  } catch (e) {
-    // Релиз не существует — это то, что нам нужно
-  }
-
-  // 5. Создаем релиз на GitHub
-  console.log(`☁️  Создание релиза ${tagName} на GitHub...`);
-  try {
-    execSync(
-      `gh release create "${tagName}" "${archivePath}" ` +
-      `--title "Release ${tagName}" ` +
-      `--generate-notes`,
-      { cwd: uiDir, stdio: 'inherit' }
-    );
-  } catch (error) {
-    console.error('❌ Ошибка при создании релиза через gh CLI');
-    process.exit(1);
-  }
-
-  // 6. Создаем git-коммит и тег локально
-  console.log(`📝 Создание git-коммита и тега...`);
-  try {
-    execSync(`git add package.json package-lock.json`, { cwd: uiDir, stdio: 'inherit' });
-    execSync(`git commit -m "Release ${tagName}"`, { cwd: uiDir, stdio: 'inherit' });
-    execSync(`git tag ${tagName}`, { cwd: uiDir, stdio: 'inherit' });
-  } catch (error) {
-    console.warn('⚠️ Не удалось создать git-коммит/тег (возможно, нет изменений)');
-  }
-
-  // 7. Очищаем временный архив
-  console.log('🧹 Очистка временных файлов...');
-  fs.unlinkSync(archivePath);
-
-  console.log(`\n🎉 Успешно! Релиз ${tagName} опубликован.`);
-  console.log(`   Orange Pi автоматически заберет эту версию при следующем запуске cron.`);
+  console.log(`\n🎉 Успешно! Релиз ${tagName} опубликован, мусор удален.`);
 }
 
-main();
+main().catch(err => {
+  console.error('❌ Критическая ошибка:', err.message);
+  process.exit(1);
+});
