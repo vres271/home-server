@@ -3,15 +3,18 @@ set -e
 
 # ============================================
 # Скрипт настройки Nginx Reverse Proxy на VPS
-# Запуск: bash nginx.sh
+# Запуск: bash /opt/setup-scripts/02-nginx.sh
 # ============================================
 
+# Переменные конфигурации
+VPS_HOST="vres271.hlab.kz" # Ваш актуальный домен или IP VPS
 CONFIG_FILE="/etc/nginx/sites-available/torrent-proxy"
 ENABLED_LINK="/etc/nginx/sites-enabled/torrent-proxy"
 DEFAULT_LINK="/etc/nginx/sites-enabled/default"
 
 echo "=========================================="
 echo "  Настройка Nginx Reverse Proxy"
+echo "  Целевой хост: ${VPS_HOST}"
 echo "=========================================="
 
 # ------------------------------------------
@@ -35,7 +38,7 @@ echo "[...] Создаю конфигурационный файл..."
 cat > "${CONFIG_FILE}" << 'EOF'
 server {
     listen 80;
-    server_name vres271.hlab.kz; # IP или ваш домен
+    server_name __VPS_HOST__;
 
     # 1. Проксирование Jackett (для WebUI и API)
     location /api/jackett/ {
@@ -78,6 +81,9 @@ server {
     }
 }
 EOF
+
+# Безопасная подстановка переменной VPS_HOST вместо плейсхолдера
+sed -i "s/__VPS_HOST__/${VPS_HOST}/g" "${CONFIG_FILE}"
 echo "[OK] Конфигурация сохранена в ${CONFIG_FILE}"
 
 # ------------------------------------------

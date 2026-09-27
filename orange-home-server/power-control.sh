@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Установщик power-control сервиса для Orange Pi.
-# Запуск: sudo ./install.sh [--subnet 192.168.0.0/24] [--port 8095] [--dry-run] [--force]
+# Запуск: sudo bash /opt/home-lab/scripts/03-power-control.sh [--subnet 192.168.0.0/24] [--port 8095]
 
 set -euo pipefail
 
@@ -11,10 +11,9 @@ DRY_RUN_FLAG=false
 FORCE=false
 PORT=8095
 SERVICE_NAME="power-control"
-INSTALL_DIR="/opt/power-control"
+INSTALL_DIR="/opt/home-lab/power-control" # <-- Обновленный путь
 ENV_FILE="/etc/power-control.env"
 UNIT_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
-NGINX_SNIPPET="/etc/nginx/snippets/power-control.conf"
 TEMP_PATH_DEFAULT="/sys/class/thermal/thermal_zone0/temp"
 
 # -------- Парсинг аргументов --------
