@@ -26,6 +26,28 @@
           </div>
         }
       </div>
+
+      <!-- Бейдж статуса поиска торрентов -->
+      @if (isSearching || isSearchCompleted) {
+        <div class="absolute top-0 right-0 z-1 m-2 px-2 py-2 border-round flex align-items-center gap-2 shadow-2 text-xs font-medium text-white"
+            style="background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(8px);"
+            [title]="isSearching ? 'Ищем раздачи в Jackett...' : 'Найдено раздач: всего (с учетом фильтров)'">
+
+          @if (isSearching) {
+            <i class="pi pi-spin pi-spinner text-primary"></i>
+            <span>Поиск...</span>
+          } @else {
+            <i class="pi pi-database text-primary"></i>
+            <span>
+              <strong>{{ totalResults }}</strong>
+              @if (totalResults !== filteredResults) {
+                ({{ filteredResults }})
+              }
+            </span>
+          }
+
+        </div>
+      }
     </div>
 
     <!-- Контент ниже backdrop -->

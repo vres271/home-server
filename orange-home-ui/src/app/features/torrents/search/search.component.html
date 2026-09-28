@@ -90,6 +90,10 @@
         [fullDetails]="fullMediaDetails"
         [isLoadingDetails]="isLoadingDetails"
         [selectedSeason]="selectedSeason"
+        [totalResults]="allJackettResults.length"
+        [filteredResults]="results.length"
+        [isSearchCompleted]="isSearched && !searchLoading"
+        [isSearching]="searchLoading" 
         (goBack)="onGoBack()"
         (seasonSelected)="onSeasonSelected($event)">
       </app-media-details>

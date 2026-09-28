@@ -26,6 +26,10 @@ export class MediaDetailsComponent {
   @Input() fullDetails: any = null;
   @Input() isLoadingDetails = false;
   @Input() selectedSeason: number = 0;
+  @Input() totalResults: number = 0;
+  @Input() filteredResults: number = 0;
+  @Input() isSearchCompleted: boolean = false;
+  @Input() isSearching: boolean = false;
 
   @Output() goBack = new EventEmitter<void>();
   @Output() seasonSelected = new EventEmitter<number>();
