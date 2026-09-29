@@ -45,8 +45,8 @@ graph TD
 📁 orange-home-server/
  ├── nginx.sh               # Настройка Nginx, папки UI и правил проксирования
  ├── qbittorrent-samba.sh   # Установка торрент-клиента, создание пользователя и сетевой папки
- ├── power-control.sh       # Установка и настройка сервиса управления питанием
- └── deploy-ui.sh           # 🚀 Скрипт обновления: скачивает последний релиз с GitHub и распаковывает его
+ ├── system-service.sh       # Установка бэкенд-сервиса (управление питанием + API обновлений UI)
+ └── deploy-ui.sh           # Скрипт обновления: скачивает последний релиз с GitHub и распаковывает его
 ```
 
 ---
@@ -67,7 +67,7 @@ graph TD
    ```bash
    sudo bash nginx.sh
    sudo bash qbittorrent-samba.sh   # Скрипт попросит задать пароль для Samba
-   sudo bash power-control.sh
+   sudo bash system-service.sh
    ```
 4. **Первичная настройка qBittorrent:** Зайдите в WebUI (`http://<OrangePi_IP>:8080`), логин/пароль по умолчанию: `admin` / `adminadmin`. **Смените пароль** и укажите путь сохранения `/mnt/shared`.
 
