@@ -49,6 +49,16 @@ async function main() {
   console.log(`\n📦 Сборка проекта (генерация актуального version.json)...`);
   execSync(`npm run build:versioned`, { cwd: uiDir, stdio: 'inherit' });
 
+  // 🛡️ БЕЗОПАСНОСТЬ: Удаляем config.json с API-ключами из dist перед упаковкой
+  console.log(`\n🛡️ Проверка и удаление config.json из сборки (защита API-ключей)...`);
+  const configPath = path.join(distDir, 'config.json');
+  if (fs.existsSync(configPath)) {
+    fs.unlinkSync(configPath);
+    console.log(`   ✅ config.json успешно удален из папки dist`);
+  } else {
+    console.log(`   ℹ️ config.json не найден в dist, пропускаем`);
+  }
+
   console.log(`\n🗜️ Упаковка актуальных файлов в ${archiveName}...`);
   const posixArchivePath = toPosixPath(archivePath);
   const posixDistDir = toPosixPath(distDir);

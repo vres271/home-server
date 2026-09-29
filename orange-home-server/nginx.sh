@@ -10,6 +10,8 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 APP_DIR="/var/www/orange-home-ui"
+SECURE_CONF_DIR="/etc/orange-home-ui"
+SECURE_CONF_FILE="${SECURE_CONF_DIR}/config.json"
 NGINX_CONF="/etc/nginx/sites-available/orange-home-ui"
 VPS_HOST="vres271.hlab.kz" # Ваш актуальный домен VPS
 
@@ -29,7 +31,11 @@ mkdir -p "$APP_DIR"
 chown -R www-data:www-data "$APP_DIR"
 chmod -R 755 "$APP_DIR"
 
-# 3. Запись ПОЛНОГО и актуального конфига Nginx
+# 3. Создание защищенной директории для конфигов (если её нет)
+echo "🔒 Создание защищенной директории ${SECURE_CONF_DIR}..."
+mkdir -p "$SECURE_CONF_DIR"
+
+# 4. Запись ПОЛНОГО и актуального конфига Nginx
 echo "⚙️ Обновление конфигурации Nginx..."
 cat << EOF > "$NGINX_CONF"
 server {
@@ -37,6 +43,14 @@ server {
     server_name _;
 
     client_max_body_size 50M;
+
+    # 🛡️ ПОДМЕНА CONFIG.JSON: Отдаем защищенный файл с реальными ключами
+    location = /config.json {
+        alias ${SECURE_CONF_FILE};
+        expires -1;
+        add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate";
+        add_header Pragma "no-cache";
+    }
 
     # Запрет кэширования version.json (для актуализации UI после деплоя)
     location = /version.json {
@@ -119,16 +133,16 @@ server {
 }
 EOF
 
-# 4. Активация конфигурации
+# 5. Активация конфигурации
 echo "🔗 Активация сайта в Nginx..."
 ln -sf "$NGINX_CONF" /etc/nginx/sites-enabled/
 rm -f /etc/nginx/sites-enabled/default
 
-# 5. Брандмауэр
+# 6. Брандмауэр
 echo "🛡️ Настройка UFW (если активен)..."
 ufw allow 80/tcp || true
 
-# 6. Проверка и перезагрузка
+# 7. Проверка и перезагрузка
 echo "🧪 Проверка конфигурации Nginx..."
 nginx -t
 
@@ -137,3 +151,32 @@ systemctl reload nginx
 
 echo "✅ [1/3] Готово! Nginx настроен."
 echo "📂 Папка для деплоя: ${APP_DIR}"
+
+# ==========================================
+# 8. ВАЖНОЕ ПРЕДУПРЕЖДЕНИЕ ПРО КОНФИГ
+# ==========================================
+echo ""
+echo "========================================================================="
+echo "⚠️  ВНИМАНИЕ: КРИТИЧЕСКИ ВАЖНЫЙ ШАГ!"
+echo "========================================================================="
+echo "Для работы приложения необходимо создать защищенный файл конфигурации"
+echo "с вашими реальными API-ключами на этом сервере."
+echo ""
+echo "1. Создайте файл:"
+echo "   sudo nano ${SECURE_CONF_FILE}"
+echo ""
+echo "2. Вставьте в него следующее содержимое (замените ключи на свои):"
+echo "{"
+echo "  \"tmdbApiKey\": \"10c34eac115400ee04361d62d80bcd8a\","
+echo "  \"jackettApiKey\": \"afff2vlj4xj4l10m0bj9wzcjitrtk12w\","
+echo "  \"jackettUrl\": \"/api/jackett\","
+echo "  \"qbittorrentUrl\": \"/api/qbittorrent\""
+echo "}"
+echo ""
+echo "3. Установите строгие права доступа (читать может только root и Nginx):"
+echo "   sudo chmod 640 ${SECURE_CONF_FILE}"
+echo "   sudo chown root:www-data ${SECURE_CONF_FILE}"
+echo ""
+echo "4. Перезагрузите Nginx после создания файла:"
+echo "   sudo systemctl reload nginx"
+echo "========================================================================="
