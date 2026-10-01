@@ -33,6 +33,7 @@ export class MediaDetailsComponent {
 
   @Output() goBack = new EventEmitter<void>();
   @Output() seasonSelected = new EventEmitter<number>();
+  @Output() scrollToResults = new EventEmitter<void>();
 
   public tmdb = inject(TmdbService);
   private cdr = inject(ChangeDetectorRef);

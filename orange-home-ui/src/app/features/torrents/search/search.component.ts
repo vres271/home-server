@@ -46,6 +46,7 @@ export class SearchComponent {
   @Output() torrentAdded = new EventEmitter<void>();
 
   @ViewChild('directSearchBlock') directSearchBlock!: ElementRef;
+  @ViewChild('resultsBlock') resultsBlock!: ElementRef;
 
   public tmdbService = inject(TmdbService);
   private jackettService = inject(JackettService);
@@ -382,5 +383,16 @@ switchToDirectSearch() {
       }
     });
   }
+
+  onScrollToResults() {
+    setTimeout(() => {
+      if (this.resultsBlock) {
+        this.resultsBlock.nativeElement.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }
+    }, 50);
+  }  
 
 }

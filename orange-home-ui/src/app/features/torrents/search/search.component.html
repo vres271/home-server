@@ -95,11 +95,12 @@
         [isSearchCompleted]="isSearched && !searchLoading"
         [isSearching]="searchLoading" 
         (goBack)="onGoBack()"
-        (seasonSelected)="onSeasonSelected($event)">
+        (seasonSelected)="onSeasonSelected($event)"
+        (scrollToResults)="onScrollToResults()">
       </app-media-details>
 
       @if (isSearched || searchLoading) {
-        <div class="mt-4">
+        <div #resultsBlock class="mt-4">
           <app-filter-panel (filtersChanged)="onFiltersChanged()"></app-filter-panel>
 
           @if (searchLoading && results.length === 0) {
