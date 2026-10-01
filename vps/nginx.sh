@@ -40,6 +40,10 @@ server {
     listen 80;
     server_name __VPS_HOST__;
 
+    # Явный DNS-резолвер. 
+    # ipv6=off предотвращает зависания, если IPv6 на VPS настроен неидеально.
+    resolver 8.8.8.8 1.1.1.1 valid=300s ipv6=off;
+
     # 1. Проксирование Jackett (для WebUI и API)
     location /api/jackett/ {
         proxy_pass http://127.0.0.1:9117/;
