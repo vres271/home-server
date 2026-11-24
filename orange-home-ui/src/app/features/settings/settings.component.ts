@@ -25,6 +25,7 @@ import { VersionService, VersionInfo } from '../../core/services/version.service
 
 // Ваши компоненты
 import { SystemPowerControlComponent } from './system-power-control/system-power-control.component';
+import { TvDiscoveryComponent } from './tv-discovery/tv-discovery.component';
 
 @Component({
   selector: 'app-settings',
@@ -36,8 +37,9 @@ import { SystemPowerControlComponent } from './system-power-control/system-power
     ConfirmDialogModule,
     ToastModule,
     DatePipe,
-    SystemPowerControlComponent
-  ],
+    SystemPowerControlComponent,
+    TvDiscoveryComponent
+],
   providers: [
     ConfirmationService, 
     MessageService

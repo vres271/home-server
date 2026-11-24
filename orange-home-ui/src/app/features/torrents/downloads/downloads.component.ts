@@ -12,6 +12,9 @@ import { takeUntil } from 'rxjs/operators';
 import { QBittorrentService } from '../../../core/services/qbittorrent.service';
 import { TorrentInfo } from '../../../core/models/qbittorrent.model';
 import { TorrentDetailsComponent } from './torrent-details/torrent-details.component';
+import { PlayerService, TvStatus } from '../../../core/services/player.service';
+import { TvPlayerBarComponent } from '../../tv-player-bar/tv-player-bar.component';
+import { PendingDownload, PendingDownloadService } from '../../../core/services/pending-download.service';
 
 @Component({
   selector: 'app-torrent-downloads',
@@ -19,15 +22,18 @@ import { TorrentDetailsComponent } from './torrent-details/torrent-details.compo
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CommonModule, ButtonModule, ToastModule, ProgressBarModule, 
-    TooltipModule, TorrentDetailsComponent
+    TooltipModule, TorrentDetailsComponent, TvPlayerBarComponent
   ],
-  providers: [MessageService],
+  providers: [MessageService, PlayerService],
   templateUrl: './downloads.component.html',
   styleUrls: ['./downloads.component.css']
 })
 export class DownloadsComponent implements OnInit, OnDestroy {
   private qbService = inject(QBittorrentService);
   private messageService = inject(MessageService);
+  private playerService = inject(PlayerService);
+  private pendingService = inject(PendingDownloadService);
+  pendingDownloads: PendingDownload[] = [];  
   private cdr = inject(ChangeDetectorRef);
 
   activeTorrents: TorrentInfo[] = [];
@@ -36,16 +42,32 @@ export class DownloadsComponent implements OnInit, OnDestroy {
 
   showDetailsDialog = false;
   selectedTorrent: TorrentInfo | null = null;
+  playingHash: string | null = null;
+  currentTvStatus: TvStatus | null = null;
 
   private destroy$ = new Subject<void>();
   private readonly refreshInterval = 5000;
   private readonly freeSpaceInterval = 30000;
+  private previousTorrentsCount = 0;
+
 
   ngOnInit() {
     this.loadTorrents();
     this.loadFreeSpace();
     this.startAutoUpdate();
     this.startFreeSpaceAutoUpdate();
+
+    this.pendingService.pending$.subscribe(pending => {
+      this.pendingDownloads = pending;
+      this.cdr.markForCheck();
+    });
+
+    this.playerService.status$.pipe(takeUntil(this.destroy$)).subscribe(status => {
+      this.currentTvStatus = status;
+      this.updatePlayingHash();
+      this.cdr.markForCheck();
+    });
+    
   }
 
   ngOnDestroy() {
@@ -53,12 +75,21 @@ export class DownloadsComponent implements OnInit, OnDestroy {
     this.destroy$.complete();
   }
 
-  private fetchAndSortTorrents(): Observable<TorrentInfo[]> {
-    return this.qbService.getTorrents().pipe(
-      map(torrents =>
-        [...torrents].sort((a, b) => (b.added_on || 0) - (a.added_on || 0))
-      )
-    );
+  private updatePlayingHash() {
+    if (!this.currentTvStatus?.active || !this.currentTvStatus.filePath) {
+      this.playingHash = null;
+      return;
+    }
+
+    const tvFileName = this.currentTvStatus.filePath.split('/').pop()?.toLowerCase() || '';
+    
+    const matchingTorrent = this.activeTorrents.find(t => {
+      const tName = (t.name || '').toLowerCase();
+      const tPath = (t.content_path || '').toLowerCase();
+      return tName === tvFileName || tPath.endsWith(tvFileName);
+    });
+
+    this.playingHash = matchingTorrent ? matchingTorrent.hash : null;
   }
 
   private startAutoUpdate() {
@@ -68,11 +99,33 @@ export class DownloadsComponent implements OnInit, OnDestroy {
         this.fetchAndSortTorrents().subscribe({
           next: (torrents) => {
             this.activeTorrents = torrents;
-            this.cdr.markForCheck();   // 🔥 interval вне событий DOM
+            this.updatePlayingHash(); // <-- Обновляем привязку при новом списке
+            this.cdr.markForCheck();
           },
           error: () => {}
         });
       });
+  }
+
+  private fetchAndSortTorrents(): Observable<TorrentInfo[]> {
+    return this.qbService.getTorrents().pipe(
+      map(torrents => {
+        const sorted = [...torrents].sort((a, b) => (b.added_on || 0) - (a.added_on || 0));
+        
+        // 🔥 Проверяем, появился ли новый торрент
+        if (sorted.length > this.previousTorrentsCount && this.pendingDownloads.length > 0) {
+          // Количество увеличилось! Удаляем самый старый плейсхолдер
+          const oldestPending = [...this.pendingDownloads].sort((a, b) => a.timestamp - b.timestamp)[0];
+          console.log(`✅ Новый торрент появился в списке! Удаляем плейсхолдер: "${oldestPending.name}"`);
+          this.pendingService.remove(oldestPending.id);
+        }
+        
+        // Запоминаем текущее количество для следующего сравнения
+        this.previousTorrentsCount = sorted.length;
+        
+        return sorted;
+      })
+    );
   }
 
   private loadFreeSpace() {
@@ -166,6 +219,32 @@ export class DownloadsComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  playOnTv(torrent: TorrentInfo) {
+    if (this.playingHash) return;
+
+    const filePath = torrent.content_path || `/mnt/shared/${torrent.name}`;
+    this.playingHash = torrent.hash;
+    this.cdr.markForCheck();
+
+    this.playerService.playOnTv(filePath).pipe(
+      finalize(() => {
+        this.playingHash = null;
+        this.cdr.markForCheck();
+      })
+    ).subscribe({
+      next: (res) => {
+        if (res.ok) {
+          // this.messageService.add({ severity: 'success', summary: 'Запуск на ТВ', detail: `Открыто: ${torrent.name}` });
+        } else {
+          this.messageService.add({ severity: 'error', summary: 'Ошибка ТВ', detail: res.error || 'Не удалось запустить' });
+        }
+      },
+      error: () => {
+        this.messageService.add({ severity: 'error', summary: 'Ошибка ТВ', detail: 'Нет связи с сервером или ТВ' });
+      }
+    });
   }
 
   openTorrentDetails(torrent: TorrentInfo) {

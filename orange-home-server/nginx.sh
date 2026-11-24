@@ -118,6 +118,24 @@ server {
         proxy_read_timeout 10s;
     }
 
+    # Управление ТВ (TV Control / ADB)
+    location /api/media/ {
+        allow 127.0.0.1;
+        allow ::1;
+        allow 192.168.0.0/24;
+        deny all;
+
+        limit_except GET POST {
+            deny all;
+        }
+
+        proxy_pass http://127.0.0.1:8096;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_read_timeout 15s;
+    }    
+
     # Раздача статических файлов Angular
     location / {
         root ${APP_DIR};

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Установщик системного бэкенд-сервиса для Orange Pi.
-# Запуск: sudo bash system-service.sh [--port 8095]
+# Установщик системного и TV бэкенд-сервисов для Orange Pi.
+# Запуск: sudo bash system-service.sh [--port 8095] [--tv-port 8096] [--dry-run] [--force]
 
 set -euo pipefail
 
@@ -9,23 +9,28 @@ set -euo pipefail
 DRY_RUN_FLAG=false
 FORCE=false
 PORT=8095
-SERVICE_NAME="power-control"
+TV_PORT=8096
+SYSTEM_SERVICE_NAME="system-control"
+TV_SERVICE_NAME="tv-control"
 INSTALL_DIR="/opt/power-control"
-ENV_FILE="/etc/power-control.env"
-UNIT_FILE="/etc/systemd/system/${SERVICE_NAME}.service"
+SYSTEM_ENV_FILE="/etc/system-control.env"
+TV_ENV_FILE="/etc/tv-control.env"
+SYSTEM_UNIT_FILE="/etc/systemd/system/${SYSTEM_SERVICE_NAME}.service"
+TV_UNIT_FILE="/etc/systemd/system/${TV_SERVICE_NAME}.service"
 TEMP_PATH_DEFAULT="/sys/class/thermal/thermal_zone0/temp"
 
-# Определяем директорию, откуда запущен этот скрипт, чтобы найти app.py
+# Определяем директорию, откуда запущен этот скрипт, чтобы найти файлы
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # -------- Парсинг аргументов --------
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --port)   PORT="$2"; shift 2 ;;
-    --dry-run) DRY_RUN_FLAG=true; shift ;;
-    --force)  FORCE=true; shift ;;
+    --port)      PORT="$2"; shift 2 ;;
+    --tv-port)   TV_PORT="$2"; shift 2 ;;
+    --dry-run)   DRY_RUN_FLAG=true; shift ;;
+    --force)     FORCE=true; shift ;;
     -h|--help)
-      echo "Usage: $0 [--port 8095] [--dry-run] [--force]"
+      echo "Usage: $0 [--port 8095] [--tv-port 8096] [--dry-run] [--force]"
       exit 0
       ;;
     *) echo "Unknown option: $1"; exit 1 ;;
@@ -49,7 +54,8 @@ run() {
 # -------- Шаг 1. Пакеты --------
 echo "==> Установка пакетов..."
 run apt update
-run apt install -y python3 python3-venv python3-pip
+# Добавлен adb, так как он необходим для TV-сервиса
+run apt install -y python3 python3-venv python3-pip adb
 
 # -------- Шаг 2. Проверка systemctl --------
 SYSTEMCTL_BIN=$(command -v systemctl || true)
@@ -70,28 +76,38 @@ echo "==> Установка Python-зависимостей..."
 run "${INSTALL_DIR}/.venv/bin/pip" install --upgrade pip
 run "${INSTALL_DIR}/.venv/bin/pip" install flask waitress
 
-# -------- Шаг 4. Копирование app.py --------
-APP_PY_SRC="${SCRIPT_DIR}/app.py"
-APP_PY_DST="${INSTALL_DIR}/app.py"
+# -------- Шаг 4. Копирование файлов приложения --------
+SYSTEM_APP_SRC="${SCRIPT_DIR}/system_app.py"
+SYSTEM_APP_DST="${INSTALL_DIR}/system_app.py"
+TV_APP_SRC="${SCRIPT_DIR}/tvcontrol/tv_app.py"
+TV_APP_DST="${INSTALL_DIR}/tv_app.py"
 
-if [[ ! -f "$APP_PY_SRC" ]]; then
-  echo "❌ Ошибка: Файл ${APP_PY_SRC} не найден!"
+if [[ ! -f "$SYSTEM_APP_SRC" ]]; then
+  echo "❌ Ошибка: Файл ${SYSTEM_APP_SRC} не найден!"
   exit 1
 fi
 
-echo "==> Копирование ${APP_PY_SRC} в ${APP_PY_DST}..."
+if [[ ! -f "$TV_APP_SRC" ]]; then
+  echo "❌ Ошибка: Файл ${TV_APP_SRC} не найден!"
+  exit 1
+fi
+
+echo "==> Копирование файлов приложения в ${INSTALL_DIR}..."
 if [[ "$DRY_RUN_FLAG" == false ]]; then
-  cp "$APP_PY_SRC" "$APP_PY_DST"
-  chmod 644 "$APP_PY_DST"
+  cp "$SYSTEM_APP_SRC" "$SYSTEM_APP_DST"
+  cp "$TV_APP_SRC" "$TV_APP_DST"
+  chmod 644 "$SYSTEM_APP_DST"
+  chmod 644 "$TV_APP_DST"
 fi
 
 # -------- Шаг 5. Конфиг .env --------
-if [[ -f "$ENV_FILE" && "$FORCE" == false ]]; then
-  echo "==> ${ENV_FILE} уже существует. Пропускаем."
+# 5.1 System Control
+if [[ -f "$SYSTEM_ENV_FILE" && "$FORCE" == false ]]; then
+  echo "==> ${SYSTEM_ENV_FILE} уже существует. Пропускаем."
 else
-  echo "==> Запись ${ENV_FILE}..."
+  echo "==> Запись ${SYSTEM_ENV_FILE}..."
   if [[ "$DRY_RUN_FLAG" == false ]]; then
-    cat > "$ENV_FILE" <<EOF
+    cat > "$SYSTEM_ENV_FILE" <<EOF
 POWER_ENABLED=true
 POWER_DRY_RUN=true
 POWER_ALLOW_REBOOT=true
@@ -108,17 +124,37 @@ POWER_UPDATE_REPO=vres271/home-server
 POWER_WEB_ROOT=/var/www/orange-home-ui
 POWER_ALLOW_UPDATE=true
 EOF
-    chmod 600 "$ENV_FILE"
+    chmod 600 "$SYSTEM_ENV_FILE"
+  fi
+fi
+
+# 5.2 TV Control
+if [[ -f "$TV_ENV_FILE" && "$FORCE" == false ]]; then
+  echo "==> ${TV_ENV_FILE} уже существует. Пропускаем."
+else
+  echo "==> Запись ${TV_ENV_FILE}..."
+  if [[ "$DRY_RUN_FLAG" == false ]]; then
+    cat > "$TV_ENV_FILE" <<EOF
+TV_HOST=127.0.0.1
+TV_PORT=${TV_PORT}
+ADB_PATH=/usr/bin/adb
+ADB_DEFAULT_TARGET=192.168.0.120:5555
+SMB_SHARE_NAME=Shared
+DEFAULT_SAVE_PATH=/mnt/shared
+NOVA_COMPONENT=org.courville.nova/com.archos.mediacenter.video.player.PlayerActivity
+EOF
+    chmod 600 "$TV_ENV_FILE"
   fi
 fi
 
 # -------- Шаг 6. systemd unit --------
-if [[ -f "$UNIT_FILE" && "$FORCE" == false ]]; then
-  echo "==> ${UNIT_FILE} уже существует. Пропускаем."
+# 6.1 System Control Unit
+if [[ -f "$SYSTEM_UNIT_FILE" && "$FORCE" == false ]]; then
+  echo "==> ${SYSTEM_UNIT_FILE} уже существует. Пропускаем."
 else
-  echo "==> Запись ${UNIT_FILE}..."
+  echo "==> Запись ${SYSTEM_UNIT_FILE}..."
   if [[ "$DRY_RUN_FLAG" == false ]]; then
-    cat > "$UNIT_FILE" <<EOF
+    cat > "$SYSTEM_UNIT_FILE" <<EOF
 [Unit]
 Description=Orange Pi system backend service
 After=network.target
@@ -127,9 +163,36 @@ After=network.target
 Type=simple
 User=root
 Group=root
-EnvironmentFile=${ENV_FILE}
+EnvironmentFile=${SYSTEM_ENV_FILE}
 WorkingDirectory=${INSTALL_DIR}
-ExecStart=${INSTALL_DIR}/.venv/bin/python ${INSTALL_DIR}/app.py
+ExecStart=${INSTALL_DIR}/.venv/bin/python ${INSTALL_DIR}/system_app.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  fi
+fi
+
+# 6.2 TV Control Unit
+if [[ -f "$TV_UNIT_FILE" && "$FORCE" == false ]]; then
+  echo "==> ${TV_UNIT_FILE} уже существует. Пропускаем."
+else
+  echo "==> Запись ${TV_UNIT_FILE}..."
+  if [[ "$DRY_RUN_FLAG" == false ]]; then
+    cat > "$TV_UNIT_FILE" <<EOF
+[Unit]
+Description=Orange Pi TV backend service (ADB)
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+EnvironmentFile=${TV_ENV_FILE}
+WorkingDirectory=${INSTALL_DIR}
+ExecStart=${INSTALL_DIR}/.venv/bin/python ${INSTALL_DIR}/tv_app.py
 Restart=on-failure
 RestartSec=3
 
@@ -141,14 +204,28 @@ fi
 
 # -------- Шаг 7. Активация systemd --------
 if [[ "$DRY_RUN_FLAG" == false ]]; then
+  # Очистка старого единого сервиса, если он вдруг остался
+  if [[ -f "/etc/systemd/system/power-control.service" ]]; then
+    echo "==> Остановка и удаление устаревшего сервиса power-control..."
+    systemctl stop power-control.service || true
+    systemctl disable power-control.service || true
+    rm -f "/etc/systemd/system/power-control.service"
+  fi
+
   systemctl daemon-reload
-  systemctl enable "${SERVICE_NAME}.service"
-  systemctl restart "${SERVICE_NAME}.service"
-  echo "==> Сервис ${SERVICE_NAME}.service перезапущен."
+  
+  systemctl enable "${SYSTEM_SERVICE_NAME}.service"
+  systemctl restart "${SYSTEM_SERVICE_NAME}.service"
+  echo "==> Сервис ${SYSTEM_SERVICE_NAME}.service перезапущен."
+
+  systemctl enable "${TV_SERVICE_NAME}.service"
+  systemctl restart "${TV_SERVICE_NAME}.service"
+  echo "==> Сервис ${TV_SERVICE_NAME}.service перезапущен."
 fi
 
 echo
 echo "=============================================="
-echo "✅ Установка системного сервиса завершена."
-echo "Проверка API: curl http://127.0.0.1:${PORT}/api/system/status"
+echo "✅ Установка бэкенд-сервисов завершена."
+echo "Проверка System API: curl http://127.0.0.1:${PORT}/api/system/status"
+echo "Проверка TV API:     curl http://127.0.0.1:${TV_PORT}/api/media/status"
 echo "=============================================="

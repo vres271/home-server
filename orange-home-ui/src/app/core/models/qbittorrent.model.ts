@@ -13,6 +13,7 @@ export interface TorrentInfo {
   save_path: string;
   eta: number;
   has_metadata: boolean;
+  content_path?: string;
 }
 
 export interface ServerState {

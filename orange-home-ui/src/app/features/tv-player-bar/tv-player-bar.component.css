@@ -1,0 +1,121 @@
+.tv-player-bar {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  
+  width: fit-content;
+  min-width: 340px;
+  max-width: 90vw;
+  
+  background: var(--p-progressbar-label-color);
+  border: 1px solid var(--surface-border);
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  
+  z-index: 1000;
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.bar-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem; /* Компактные, но комфортные отступы */
+  gap: 1rem;
+}
+
+.media-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0; /* Критически важно для работы text-overflow: ellipsis */
+}
+
+.tv-icon {
+  font-size: 1.25rem;
+  color: var(--primary-color);
+  flex-shrink: 0; /* Иконка не сжимается */
+}
+
+.text-container {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.label {
+  font-size: 0.65rem;
+  color: var(--text-color-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.filename {
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-color);
+}
+
+.controls {
+  display: flex;
+  gap: 0.25rem;
+  flex-shrink: 0; /* Кнопки всегда остаются своего размера */
+}
+
+/* Убираем лишние отступы у кнопок PrimeNG, чтобы они были компактнее */
+.controls .p-button.p-button-rounded.p-button-text {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.bar-progress {
+  height: 3px;
+  border-radius: 0 0 16px 16px; /* Скругление только снизу, под форму бара */
+}
+
+.bar-progress .p-progressbar-value {
+  background: var(--primary-color);
+  animation: indeterminate 1.5s infinite linear;
+}
+
+.filename-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.time-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--primary-color-text, #ffffff);
+  background: var(--primary-color);
+  padding: 2px 8px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+@keyframes slideUp {
+  from { 
+    transform: translateX(-50%) translateY(120%); 
+    opacity: 0;
+  }
+  to { 
+    transform: translateX(-50%) translateY(0); 
+    opacity: 1;
+  }
+}
+
+@keyframes indeterminate {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}

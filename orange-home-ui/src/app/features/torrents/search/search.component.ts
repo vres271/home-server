@@ -19,6 +19,7 @@ import { TorrentResultsComponent } from './torrent-results/torrent-results.compo
 import { FilterService } from '../../../core/services/filter.service';
 import { TmdbSearchComponent } from './tmdb-search/tmdb-search.component';
 import { FilterPanelComponent } from './filter-panel/filter-panel.component';
+import { PendingDownloadService } from '../../../core/services/pending-download.service';
 
 @Component({
   selector: 'app-torrent-search',
@@ -53,6 +54,7 @@ export class SearchComponent {
   private qbService = inject(QBittorrentService);
   private filterService = inject(FilterService);
   private messageService = inject(MessageService);
+  private pendingService = inject(PendingDownloadService);  
   private cdr = inject(ChangeDetectorRef);
 
   selectedMedia: TmdbSearchResult | null = null;
@@ -348,11 +350,13 @@ switchToDirectSearch() {
     const displayName = this.getDisplayTitle(result);
     const isSeries = /s\d{1,2}(e\d{1,2})?|сезон|серия|season|episode|\d{1,2}[хx]\d{1,2}/i.test(displayName.toLowerCase());
     const category = isSeries ? 'series' : 'movies';
+    
+    const pendingId = this.pendingService.add(displayName);
 
     let torrentUrl = result.MagnetUri;
 
     if (result.Link && !result.Link.startsWith('magnet:')) {
-      torrentUrl = result.Link.replace(/^https?:\/\/[^/]+(\/dl\/.*)$/i, `http://192.168.0.150/api/jackett$1`);
+      torrentUrl = result.Link.replace(/^https?:\/\/[^/]+(\/dl\/.*)$/i, `http://127.0.0.1/api/jackett$1`);
     }
 
     this.qbService.addTorrent(torrentUrl, isSeries, category).subscribe({
@@ -366,14 +370,18 @@ switchToDirectSearch() {
       },
       error: (err) => {
         console.error('❌ Ошибка добавления:', err);
+        this.pendingService.remove(pendingId);
 
         if (result.MagnetUri && torrentUrl !== result.MagnetUri) {
+          const fallbackId = this.pendingService.add(displayName + ' (Magnet)');
+
           this.qbService.addTorrent(result.MagnetUri, isSeries, category).subscribe({
             next: () => {
               this.messageService.add({ severity: 'success', summary: 'Успех (Magnet)', detail: `"${displayName}" добавлен через магнет` });
               this.torrentAdded.emit();
             },
             error: () => {
+              this.pendingService.remove(fallbackId);
               this.messageService.add({ severity: 'error', summary: 'Ошибка', detail: 'Не удалось добавить торрент' });
             }
           });

@@ -1,0 +1,452 @@
+.tv-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.tv-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.tv-subtitle {
+  font-size: 0.8125rem;
+  color: var(--text-color-secondary);
+}
+
+/* Компактная строка состояния — той же высоты, что карточка устройства */
+.tv-row-state {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  background: var(--surface-card);
+  border: 1px solid rgba(127, 127, 127, 0.15);
+  border-radius: 8px;
+  color: var(--text-color-secondary);
+  font-size: 0.875rem;
+}
+
+.tv-row-state--error {
+  border-color: var(--red-500, #ef4444);
+  color: var(--text-color);
+}
+
+.tv-row-state--error > i {
+  color: var(--red-500, #ef4444);
+  font-size: 1.125rem;
+}
+
+.tv-row-state--error > span {
+  flex: 1;
+}
+
+/* Текущее устройство */
+.tv-current {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.875rem;
+  padding: 1rem;
+  margin-bottom: 1.25rem;
+  background: var(--surface-card);
+  border: 1px solid rgba(127, 127, 127, 0.15);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 8px;
+}
+
+.tv-current--fallback {
+  border-left-color: var(--orange-500, #f97316);
+}
+
+.tv-current-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 1.25rem;
+  background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+  color: var(--primary-color);
+}
+
+.tv-current--fallback .tv-current-icon {
+  background: color-mix(in srgb, var(--orange-500, #f97316) 16%, transparent);
+  color: var(--orange-500, #f97316);
+}
+
+.tv-current-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.tv-current-label {
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-color-secondary);
+}
+
+.tv-current-name {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  color: var(--text-color);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-current-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tv-addr {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--text-color-secondary);
+}
+
+.tv-tag {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--primary-color) 16%, transparent);
+  color: var(--primary-color);
+}
+
+.tv-tag--fallback {
+  background: color-mix(in srgb, var(--orange-500, #f97316) 18%, transparent);
+  color: var(--orange-500, #f97316);
+}
+
+.tv-current-note {
+  font-size: 0.75rem;
+  color: var(--text-color-secondary);
+}
+
+.tv-current-note--warn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  color: var(--orange-500, #f97316);
+}
+
+/* Секции */
+.tv-section {
+  margin-bottom: 1.25rem;
+}
+
+.tv-section-title {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-color-secondary);
+}
+
+.tv-section-hint {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  opacity: 0.8;
+}
+
+/* Выбор плеера */
+.tv-players {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.625rem;
+}
+
+.tv-player {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 0.875rem;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  background: var(--surface-card);
+  border: 1px solid rgba(127, 127, 127, 0.15);
+  border-radius: 8px;
+  color: var(--text-color);
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.tv-player:hover:not(:disabled) {
+  border-color: var(--primary-color);
+}
+
+.tv-player:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.tv-player:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.tv-player.is-active {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 8%, var(--surface-card));
+}
+
+.tv-player-icon {
+  font-size: 1.125rem;
+  color: var(--text-color-secondary);
+  flex-shrink: 0;
+}
+
+.tv-player.is-active .tv-player-icon {
+  color: var(--primary-color);
+}
+
+.tv-player-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.tv-player-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.tv-player-hint {
+  font-size: 0.6875rem;
+  color: var(--text-color-secondary);
+}
+
+.tv-player-check {
+  color: var(--primary-color);
+  flex-shrink: 0;
+}
+
+/* Список устройств */
+.tv-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  max-height: 22rem;
+  overflow-y: auto;
+  padding-right: 0.375rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary-color) var(--surface-ground, transparent);
+}
+
+.tv-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tv-list::-webkit-scrollbar-track {
+  background: var(--surface-ground, transparent);
+  border-radius: 3px;
+}
+
+.tv-list::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 3px;
+}
+
+.tv-list::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--primary-color) 80%, #000);
+}
+
+.tv-device-card {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem;
+  cursor: pointer;
+  background: var(--surface-card);
+  border: 1px solid rgba(127, 127, 127, 0.15);
+  border-radius: 8px;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.tv-device-card:hover:not(.is-busy) {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 5%, var(--surface-card));
+}
+
+.tv-device-card:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.tv-device-card.is-busy {
+  cursor: default;
+}
+
+.tv-device-card.is-selected {
+  border-color: var(--primary-color);
+  background: color-mix(in srgb, var(--primary-color) 9%, var(--surface-card));
+}
+
+.tv-device-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-size: 1.125rem;
+  background: color-mix(in srgb, var(--primary-color) 14%, transparent);
+  color: var(--primary-color);
+}
+
+.tv-device-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tv-device-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.1875rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-device-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.875rem;
+  font-size: 0.8125rem;
+  color: var(--text-color-secondary);
+}
+
+.detail-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+}
+
+.tv-device-action {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  font-size: 0.8125rem;
+  color: var(--text-color-secondary);
+}
+
+.tv-selected-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--green-500, #22c55e) 16%, transparent);
+  color: var(--green-500, #22c55e);
+}
+
+.tv-select-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.8125rem;
+  color: var(--primary-color);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tv-device-card:hover .tv-select-hint,
+.tv-device-card:focus-visible .tv-select-hint {
+  opacity: 1;
+}
+
+/* Пустые состояния */
+.tv-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.625rem;
+  padding: 2rem 1rem;
+  text-align: center;
+  color: var(--text-color-secondary);
+  border: 1px dashed rgba(127, 127, 127, 0.15);
+  border-radius: 8px;
+}
+
+.tv-empty > i {
+  font-size: 1.75rem;
+}
+
+.tv-empty p {
+  margin: 0;
+  font-size: 0.875rem;
+  max-width: 32rem;
+}
+
+.tv-footer {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 1rem;
+  font-size: 0.6875rem;
+  color: var(--text-color-secondary);
+}
+
+.tv-footer code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background: var(--surface-ground, rgba(0, 0, 0, 0.04));
+}
+
+.bordered-card {
+  border: 1px solid rgba(127, 127, 127, 0.15);
+  border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+  .tv-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tv-device-card {
+    flex-wrap: wrap;
+  }
+
+  .tv-device-action {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .tv-select-hint {
+    opacity: 1;
+  }
+}

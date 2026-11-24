@@ -27,65 +27,103 @@
   Нет активных загрузок.
 </div>
 
-<div *ngFor="let torrent of activeTorrents" class="torrent-card mb-2 md:mb-3 p-2 md:p-3 border-1 surface-border border-round">
-  <div class="mb-1 font-bold torrent-name cursor-pointer hover:text-primary-600" (click)="openTorrentDetails(torrent)">
-    {{ torrent.name }}
-  </div>
-  
-  <div class="flex justify-content-between align-items-center mb-2 text-sm text-500">
-    <span>{{ formatSize(torrent.size) }} • {{ torrent.category || 'Без категории' }}</span>
-    
-    <span *ngIf="torrent.progress < 1" class="inline-flex align-items-center gap-1">
-      <i class="pi pi-clock" style="font-size: 0.875rem; vertical-align: middle;"></i>
-      {{ formatEta(torrent.eta) }}
-    </span>
-    
-    <span *ngIf="torrent.progress === 1" title="Завершено" class="text-green-600 inline-flex align-items-center gap-1 font-medium">
-      <i class="pi pi-check-circle" style="font-size: 0.875rem; vertical-align: middle;"></i>
-    </span>
-  </div>
-  
-  <p-progressBar [value]="formatSpeedProgress(torrent.progress)" [showValue]="true" styleClass="torrent-progress-bar"></p-progressBar>
-    
-  <div class="flex justify-content-between align-items-center gap-2">
-    <div class="flex align-items-center gap-2">
-      <span class="text-sm">{{ getStateLabel(torrent.state) }}</span>
-      <span *ngIf="torrent.state === 'downloading'" class="text-sm text-green-800">
-        {{ formatSpeed(torrent.dlspeed) }}
-      </span>
-      <span *ngIf="torrent.state === 'uploading'" class="text-sm text-blue-400">
-        {{ formatSpeed(torrent.upspeed) }}
-      </span>
-    </div>
-    <div class="flex gap-2">
-      <p-button 
-        *ngIf="['downloading', 'forcedDL', 'metaDL', 'stalledDL', 'uploading', 'forcedUP', 'stalledUP'].includes(torrent.state)"
-        icon="pi pi-pause" 
-        [severity]="'warn'" 
-        [size]="'small'" 
-        (onClick)="pauseTorrent(torrent.hash)"
-        pTooltip="Пауза">
-      </p-button>
-      
-      <p-button 
-        *ngIf="['stoppedDL', 'stoppedUP'].includes(torrent.state)"
-        icon="pi pi-play" 
-        [severity]="'success'" 
-        [size]="'small'" 
-        (onClick)="resumeTorrent(torrent.hash)"
-        pTooltip="Возобновить">
-      </p-button>
-      
-      <p-button 
-        icon="pi pi-trash" 
-        [severity]="'danger'" 
-        [size]="'small'" 
-        (onClick)="deleteTorrent(torrent.hash, torrent.name)"
-        pTooltip="Удалить торрент и файлы">
-      </p-button>
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- ПЛЕЙСХОЛДЕРЫ: Ожидающие добавления торренты -->
+<!-- ═══════════════════════════════════════════════════════ -->
+@for (pending of pendingDownloads; track pending.id) {
+  <div class="torrent-card mb-2 md:mb-3 p-2 md:p-3 border-1 surface-border border-round flex align-items-center gap-3 transition-all transition-duration-300 animate-pulse">
+    <i class="pi pi-spin pi-spinner text-primary text-xl"></i>
+    <div class="flex-1 min-w-0">
+      <div class="font-bold text-700 dark:text-0 mb-1 truncate" pTooltip="{{ pending.name }}">
+        {{ pending.name }}
+      </div>
+      <div class="text-sm text-500 flex align-items-center gap-2">
+        <span>Добавление в qBittorrent...</span>
+      </div>
     </div>
   </div>
-</div>
+}
+
+<!-- Добавлены классы для подсветки активной строки -->
+ @for (torrent of activeTorrents; track torrent.hash) {
+  <div 
+      class="torrent-card mb-2 md:mb-3 p-2 md:p-3 border-1 surface-border border-round transition-all transition-duration-200"
+      [ngStyle]="{
+        'border-left': torrent.hash === playingHash ? '3px solid var(--primary-color)' : null,
+        'background': torrent.hash === playingHash ? 'rgba(var(--primary-color-rgb, 59, 130, 246), 0.08)' : null
+      }">
+      
+    <div class="mb-1 font-bold torrent-name cursor-pointer hover:text-primary-600 flex align-items-center gap-2" (click)="openTorrentDetails(torrent)">
+      <!-- Иконка воспроизведения, если этот торрент сейчас на ТВ -->
+      <i *ngIf="torrent.hash === playingHash" class="pi pi-play-circle text-primary-500" pTooltip="Сейчас играет на ТВ" tooltipPosition="right"></i>
+      {{ torrent.name }}
+    </div>
+    
+    <div class="flex justify-content-between align-items-center mb-2 text-sm text-500">
+      <span>{{ formatSize(torrent.size) }} • {{ torrent.category || 'Без категории' }}</span>
+      
+      <span *ngIf="torrent.progress < 1" class="inline-flex align-items-center gap-1">
+        <i class="pi pi-clock" style="font-size: 0.875rem; vertical-align: middle;"></i>
+        {{ formatEta(torrent.eta) }}
+      </span>
+      
+      <span *ngIf="torrent.progress === 1" title="Завершено" class="text-green-600 inline-flex align-items-center gap-1 font-medium">
+        <i class="pi pi-check-circle" style="font-size: 0.875rem; vertical-align: middle;"></i>
+      </span>
+    </div>
+    
+    <p-progressBar [value]="formatSpeedProgress(torrent.progress)" [showValue]="true" styleClass="torrent-progress-bar"></p-progressBar>
+      
+    <div class="flex justify-content-between align-items-center gap-2">
+      <div class="flex align-items-center gap-2">
+        <span class="text-sm">{{ getStateLabel(torrent.state) }}</span>
+        <span *ngIf="torrent.state === 'downloading'" class="text-sm text-green-800">
+          {{ formatSpeed(torrent.dlspeed) }}
+        </span>
+        <span *ngIf="torrent.state === 'uploading'" class="text-sm text-blue-400">
+          {{ formatSpeed(torrent.upspeed) }}
+        </span>
+      </div>
+      <div class="flex gap-2">
+        <p-button 
+          icon="pi pi-desktop" 
+          [severity]="'info'" 
+          [size]="'small'" 
+          [loading]="playingHash === torrent.hash"
+          [disabled]="playingHash !== null && playingHash !== torrent.hash"
+          (onClick)="playOnTv(torrent)"
+          pTooltip="Смотреть на ТВ">
+        </p-button>
+
+        <p-button 
+          *ngIf="['downloading', 'forcedDL', 'metaDL', 'stalledDL', 'uploading', 'forcedUP', 'stalledUP'].includes(torrent.state)"
+          icon="pi pi-pause" 
+          [severity]="'warn'" 
+          [size]="'small'" 
+          (onClick)="pauseTorrent(torrent.hash)"
+          pTooltip="Пауза">
+        </p-button>
+        
+        <p-button 
+          *ngIf="['stoppedDL', 'stoppedUP'].includes(torrent.state)"
+          icon="pi pi-download" 
+          [severity]="'success'" 
+          [size]="'small'" 
+          (onClick)="resumeTorrent(torrent.hash)"
+          pTooltip="Возобновить">
+        </p-button>
+        
+        <p-button 
+          icon="pi pi-trash" 
+          [severity]="'danger'" 
+          [size]="'small'" 
+          (onClick)="deleteTorrent(torrent.hash, torrent.name)"
+          pTooltip="Удалить торрент и файлы">
+        </p-button>
+      </div>
+    </div>
+  </div>
+}
 
 <app-torrent-details 
   *ngIf="selectedTorrent"
@@ -94,3 +132,5 @@
   (visibleChange)="onDialogHide()" 
   (onTorrentUpdated)="loadTorrents()">
 </app-torrent-details>
+
+<app-tv-player-bar></app-tv-player-bar>

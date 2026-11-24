@@ -1,0 +1,45 @@
+<div class="tv-player-bar" *ngIf="playerService.status$ | async as status">
+  <ng-container *ngIf="status.active; else empty">
+    <div class="bar-content">
+      <div class="media-info">
+        <i class="pi pi-desktop tv-icon"></i>
+        <div class="text-container">
+          <span class="label">Воспроизводится на ТВ:</span>
+          <span class="filename" [pTooltip]="getFileName(status.filePath)" tooltipPosition="top">
+            {{ getFileName(status.filePath) }}
+          </span>
+          <span *ngIf="status.positionSeconds !== null" class="time-badge">
+            {{ formatTime(status.positionSeconds) }}
+          </span>          
+        </div>
+      </div>
+
+      <div class="controls">
+        <p-button 
+          [icon]="status.isPlaying ? 'pi pi-pause' : 'pi pi-play'" 
+          severity="success" 
+          [rounded]="true"
+          [text]="true"
+          pTooltip="Play/Pause"
+          [loading]="isControlling"
+          (onClick)="sendControl('play_pause')">
+        </p-button>
+        
+        <p-button 
+          icon="pi pi-stop" 
+          severity="danger" 
+          [rounded]="true"
+          [text]="true"
+          pTooltip="Остановить и закрыть"
+          [loading]="isControlling"
+          (onClick)="sendControl('stop')">
+        </p-button>
+      </div>
+    </div>
+    <p-progressBar [value]="null" [showValue]="false" styleClass="bar-progress"></p-progressBar>
+  </ng-container>
+</div>
+
+<ng-template #empty>
+  <div></div>
+</ng-template>

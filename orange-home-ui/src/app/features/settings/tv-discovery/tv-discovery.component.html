@@ -1,0 +1,200 @@
+<div class="tv-header">
+  <div class="tv-header-text">
+    <h3 class="m-0">Поиск телевизора в локальной сети</h3>
+    <span class="tv-subtitle">Устройство для запуска и управления воспроизведением</span>
+  </div>
+  <p-button
+    icon="pi pi-search"
+    label="Найти TV"
+    [loading]="scanning()"
+    [disabled]="scanning() || busy() || loadingSettings()"
+    (onClick)="discoverDevices()"
+    title="Просканировать локальную сеть"
+  ></p-button>
+</div>
+
+@if (loadingSettings()) {
+  <div class="tv-row-state">
+    <p-progressSpinner styleClass="w-2rem h-2rem" strokeWidth="3" />
+    <span>Загрузка настроек...</span>
+  </div>
+} @else if (settingsError()) {
+  <div class="tv-row-state tv-row-state--error">
+    <i class="pi pi-exclamation-circle"></i>
+    <span>Не удалось загрузить настройки ТВ</span>
+    <p-button
+      icon="pi pi-refresh"
+      label="Повторить"
+      severity="secondary"
+      [text]="true"
+      size="small"
+      (onClick)="loadSettings()"
+    ></p-button>
+  </div>
+} @else {
+  @if (settings(); as s) {
+    <div class="tv-current bordered-card" [class.tv-current--fallback]="!s.device">
+      <div class="tv-current-icon">
+        <i class="pi" [ngClass]="s.device ? 'pi-desktop' : 'pi-question-circle'"></i>
+      </div>
+
+      <div class="tv-current-body">
+        <span class="tv-current-label">Текущее устройство</span>
+        <strong class="tv-current-name">{{ s.device?.name || 'Не выбрано' }}</strong>
+        <div class="tv-current-meta">
+          <span class="tv-addr"><i class="pi pi-link"></i> {{ effectiveTarget() }}</span>
+          <span class="tv-tag" [class.tv-tag--fallback]="!s.device">
+            {{ s.device ? 'из настроек' : 'по умолчанию' }}
+          </span>
+        </div>
+        @if (!s.device) {
+          <span class="tv-current-note">Найдите телевизор в сети и нажмите на него, чтобы закрепить адрес.</span>
+        }
+        @if (savedDeviceMissing()) {
+          <span class="tv-current-note tv-current-note--warn">
+            <i class="pi pi-exclamation-triangle"></i>
+            Не обнаружен при последнем сканировании — проверьте, включена ли отладка по сети.
+          </span>
+        }
+      </div>
+
+      @if (s.device) {
+        <p-button
+          icon="pi pi-times"
+          severity="danger"
+          [text]="true"
+          [rounded]="true"
+          [loading]="resetting()"
+          [disabled]="busy()"
+          (onClick)="confirmReset()"
+          title="Сбросить выбор"
+        ></p-button>
+      }
+    </div>
+  }
+
+  @if (scanning()) {
+    <div class="tv-row-state mb-3">
+      <p-progressSpinner styleClass="w-2rem h-2rem" strokeWidth="3" />
+      <span>Сканирование сети {{ subnet() || '...' }}...</span>
+    </div>
+  } @else if (hasSearched()) {
+    @if (visibleDevices().length > 0) {
+      <div class="tv-section">
+        <span class="tv-section-title">
+          Найдено {{ devices().length }} · {{ subnet() }}
+          <span class="tv-section-hint">
+            @if (hiddenSelectedCount() > 0) {
+              выбранное устройство показано выше
+            } @else {
+              нажмите на устройство, чтобы выбрать
+            }
+          </span>
+        </span>
+
+        <div class="tv-list">
+          @for (device of visibleDevices(); track device.target) {
+            <div
+              class="tv-device-card"
+              role="button"
+              tabindex="0"
+              [class.is-selected]="isSelected(device)"
+              [class.is-busy]="busy()"
+              [attr.aria-pressed]="isSelected(device)"
+              (click)="selectDevice(device)"
+              (keydown)="onDeviceKeydown($event, device)"
+            >
+              <div class="tv-device-icon">
+                <i class="pi pi-desktop"></i>
+              </div>
+
+              <div class="tv-device-info bodered-card">
+                <div class="tv-device-name">{{ device.name }}</div>
+                <div class="tv-device-details">
+                  <span class="detail-item"><i class="pi pi-map-marker"></i> {{ device.ip }}</span>
+                  <span class="detail-item"><i class="pi pi-server"></i> порт {{ device.port }}</span>
+                </div>
+              </div>
+
+              <div class="tv-device-action">
+                @if (savingTarget() === device.target) {
+                  <p-progressSpinner styleClass="w-1rem h-1rem" strokeWidth="4" />
+                  <span>Сохранение...</span>
+                } @else if (isSelected(device)) {
+                  <span class="tv-selected-badge"><i class="pi pi-check-circle"></i> Выбран</span>
+                } @else {
+                  <span class="tv-select-hint">Выбрать <i class="pi pi-angle-right"></i></span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    } @else if (devices().length > 0) {
+      <div class="tv-empty tv-empty--ok">
+        <i class="pi pi-check-circle"></i>
+        <p>Других устройств в сети не найдено — выбранный телевизор показан выше.</p>
+        <p-button
+          icon="pi pi-refresh"
+          label="Искать снова"
+          severity="secondary"
+          [text]="true"
+          (onClick)="discoverDevices()"
+        ></p-button>
+      </div>
+    } @else {
+      <div class="tv-empty">
+        <i class="pi pi-search-minus"></i>
+        <p>Устройства не найдены. Убедитесь, что на телевизоре включена «Отладка по сети» (ADB).</p>
+        <p-button
+          icon="pi pi-refresh"
+          label="Искать снова"
+          severity="secondary"
+          [text]="true"
+          (onClick)="discoverDevices()"
+        ></p-button>
+      </div>
+    }
+  }
+
+  @if (settings(); as s) {
+    @if (playerOptions().length > 0) {
+      <div class="tv-section">
+        <span class="tv-section-title">Плеер по умолчанию</span>
+        <div class="tv-players" role="radiogroup" aria-label="Плеер по умолчанию">
+          @for (option of playerOptions(); track option.value) {
+            <button
+              type="button"
+              class="tv-player"
+              role="radio"
+              [class.is-active]="s.player === option.value"
+              [attr.aria-checked]="s.player === option.value"
+              [disabled]="busy()"
+              (click)="selectPlayer(option.value)"
+            >
+              <i class="pi tv-player-icon" [ngClass]="option.icon"></i>
+              <span class="tv-player-text">
+                <span class="tv-player-label">{{ option.label }}</span>
+                <span class="tv-player-hint">{{ option.hint }}</span>
+              </span>
+              @if (savingPlayer() && s.player === option.value) {
+                <p-progressSpinner styleClass="w-1rem h-1rem" strokeWidth="4" />
+              } @else if (s.player === option.value) {
+                <i class="pi pi-check tv-player-check"></i>
+              }
+            </button>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  <!-- @if (settingsPath()) {
+    <div class="tv-footer">
+      <i class="pi pi-file"></i> Настройки хранятся в <code>{{ settingsPath() }}</code>
+    </div>
+  } -->
+}
+
+<p-confirmDialog [style]="{'max-width': '90%'}" />
+<p-toast position="bottom-right" />
